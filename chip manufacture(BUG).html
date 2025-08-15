@@ -109,6 +109,10 @@ textarea.w-full {
 .thermal-critical {
     animation: criticalPulse 1s infinite alternate;
 }
+@keyframes spin{to{transform:rotate(360deg)}}
+.thermal-critical {
+    animation: criticalPulse 1s infinite alternate;
+}
 @keyframes criticalPulse {
     from { background-color: #031026; }
     to { background-color: #4b0000; } /* Dark red */
@@ -124,7 +128,8 @@ textarea.w-full {
     </div>
     <div class="flex items-center gap-3">
       <button id="btnQuickHelp" class="btn btn-ghost small">Quick Help</button>
-      <button id="btnTuningGuide" class="btn btn-ghost small">Tuning Guide</button> <!-- New Button -->
+      <button id="btnTuningGuide" class="btn btn-ghost small">Tuning Guide</button> <!-- Existing Tuning Guide -->
+      <button id="btnAlgorithmTutorial" class="btn btn-ghost small">Algorithm Tutorial</button> <!-- New Button for Algorithm Tutorial -->
       <button id="btnAbout" class="btn btn-ghost small">About</button>
     </div>
   </header>
@@ -279,139 +284,75 @@ textarea.w-full {
       <div class="card">
         <div class="flex items-center justify-between mb-2">
           <div>
-            <h3 class="font-semibold">Editable Math Architecture (Sandbox)</h3>
-            <p class="help">Modify <code class="mono">multiplyMatrices</code>, add new functions like <code class="mono">addResidual</code>, or change loop order / blocking. The simulation measures your code's runtime & FLOPs to influence effective performance.</p>
+            <h3 class="font-semibold">Editable Math Architecture (JSON)</h3>
+            <p class="help">Define your algorithm as JSON. Select core operations (matrix multiply, activation, residual) and their parameters. See the "Algorithm Tutorial" for help.</p>
           </div>
           <div class="flex gap-2">
-            <button id="btnLoadExample" class="btn btn-ghost small">Load Example Optimized</button>
-            <button id="btnLoadBatteryOptimized" class="btn btn-ghost small">Load Example Battery Optimized</button> <!-- New Button -->
-            <button id="btnDefaultCode" class="btn btn-ghost small">Restore Default</button>
-            <button id="btnBeautify" class="btn btn-ghost small">Beautify (indent)</button>
+            <button id="btnLoadDefaultAlgorithm" class="btn btn-ghost small">Load Default Algorithm</button>
+            <button id="btnLoadBlockedAlgorithm" class="btn btn-ghost small">Load Blocked Algorithm</button>
+            <button id="btnLoadBatteryOptimizedAlgorithm" class="btn btn-ghost small">Load Battery Optimized Algorithm</button>
+            <button id="btnBeautifyAlgorithm" class="btn btn-ghost small">Beautify JSON</button>
           </div>
         </div>
 
-        <div id="codeEditor" class="code" contenteditable="true" spellcheck="false">
-// === Algorithm core (editable) ===
-// The simulator measures runtime, FLOPs, integer-like ops, and peak memory.
-// Edit multiplyMatrices to try tiling, blocking, or Strassen-like ideas.
-// Keep functions: createMatrix, multiplyMatrices, relu, applyActivation, runArchitecture, addResidual (if used)
-
-// Metrics (flops, iops, peakBytes) are passed to functions for accumulation.
-// Architectural hints can also be returned from runArchitecture.
-
-function createMatrix(rows, cols, metrics){
-  const A = new Array(rows);
-  for(let i=0;i<rows;i++){
-    const row = new Float64Array(cols);
-    for(let j=0;j<cols;j++) row[j] = 0.5; // Use a fixed value for deterministic results
-    A[i] = row;
-  }
-  metrics.peakBytes = Math.max(metrics.peakBytes, rows*cols*8);
-  return A;
-}
-
-// naive matmul (default) - straightforward triple loop
-function multiplyMatrices(A,B, metrics){
-  const M = A.length, K = A[0].length, N = B[0].length;
-  if(B.length !== K) throw new Error("Matrix dimension mismatch");
-  const C = new Array(M);
-  for(let i=0;i<M;i++){
-    const Ci = new Float64Array(N);
-    for(let k=0;k<K;k++){
-      const aik = A[i][k];
-      for(let j=0;j<N;j++){
-        Ci[j] += aik * B[k][j];
-        metrics.flops += 2; // multiply + add
-        metrics.iops += 2;
-      }
+        <textarea id="algorithmEditor" class="code" rows="15" spellcheck="false">{
+  "layers": 8,
+  "sequence": [
+    {
+      "type": "matrixMultiply",
+      "method": "naive"
+    },
+    {
+      "type": "activation",
+      "function": "relu"
+    },
+    {
+      "type": "matrixMultiply",
+      "method": "naive"
+    },
+    {
+      "type": "activation",
+      "function": "sigmoid"
+    },
+    {
+      "type": "conditionalResidual",
+      "frequency": 3,
+      "enabled": true
     }
-    C[i] = Ci;
-  }
-  metrics.peakBytes = Math.max(metrics.peakBytes, M*N*8);
-  return C;
-}
-
-function relu(x, metrics){ metrics.flops += 1; metrics.iops += 1; return x>0?x:0; }
-
-function applyActivation(M, metrics){
-  const R = M.length, C = M[0].length;
-  const O = new Array(R);
-  for(let i=0;i<R;i++){
-    const row = new Float64Array(C);
-    for(let j=0;j<C;j++){
-      row[j] = relu(M[i][j], metrics);
-    }
-    O[i] = row;
-  }
-  return O;
-}
-
-function addResidual(A, B, metrics){
-  const R = A.length, C = A[0].length;
-  const O = new Array(R);
-  for(let i=0;i<R;i++){
-    const row = new Float64Array(C);
-    for(let j=0;j<C;j++){
-      row[j] = A[i][j] + B[i][j];
-      metrics.flops += 1;
-      metrics.iops += 1;
-    }
-    O[i] = row;
-  }
-  return O;
-}
-
-async function runArchitecture(layers, N){
-  const metrics = { flops: 0, iops: 0, peakBytes: 0 };
-  const layerMetrics = [];
-  let X = createMatrix(N,N, metrics);
-
-  const optimalDataBlockSizeKB = Math.ceil((N * N * 8) / 1024); // Placeholder for algorithm-derived optimal data block size
-
-  const weights = new Array(layers);
-  for(let L=0; L<layers; L++){
-    weights[L] = createMatrix(N,N, metrics);
-  }
-
-  const t0 = performance.now();
-  for(let L=0; L<layers; L++){
-    const local = { flops: 0, iops: 0, peakBytes: 0 };
-    const W = weights[L];
-    let Z = multiplyMatrices(X, W, local);
-
-    if(L % 3 === 0){
-      Z = addResidual(Z, X, local);
-    }
-
-    X = applyActivation(Z, local);
-    layerMetrics.push(local);
-
-    if(L%2===0) await new Promise(r=>setTimeout(r,0));
-  }
-  const t1 = performance.now();
-
-  for(const m of layerMetrics){
-    metrics.flops += m.flops;
-    metrics.iops += m.iops;
-    metrics.peakBytes = Math.max(metrics.peakBytes, m.peakBytes);
-  }
-
-  return {
-    ms: t1 - t0,
-    flops: metrics.flops,
-    iops: metrics.iops,
-    peakBytes: metrics.peakBytes,
-    architecturalHints: {
-      optimalDataBlockSizeKB: optimalDataBlockSizeKB,
-      // Add more specific architectural hints here if your algorithm requires/benefits from them
-    }
-  };
-}
-// === end algorithm core ===
+  ]
+}</textarea>
+        <!-- Algorithm Editor Hints -->
+        <div id="algorithmHints" class="small help mono mt-2 p-3 bg-gray-900 rounded-md border border-gray-800">
+          <p class="text-white font-semibold mb-1">Supported Algorithm Operations:</p>
+          <ul class="list-disc list-inside ml-2 text-gray-400">
+            <li><strong class="text-blue-300">"type": "matrixMultiply"</strong>
+              <ul class="list-circle list-inside ml-4">
+                <li><strong class="text-emerald-300">"method": "naive"</strong></li>
+                <li><strong class="text-emerald-300">"method": "blocked"</strong> (add <code class="text-orange-300">"blockSize": [number]</code> e.g. 32)</li>
+              </ul>
+            </li>
+            <li><strong class="text-blue-300">"type": "activation"</strong>
+              <ul class="list-circle list-inside ml-4">
+                <li><strong class="text-emerald-300">"function": "relu"</strong></li>
+                <li><strong class="text-emerald-300">"function": "sigmoid"</strong></li>
+                <li><strong class="text-emerald-300">"function": "tanh"</strong></li>
+              </ul>
+            </li>
+            <li><strong class="text-blue-300">"type": "conditionalResidual"</strong>
+              <ul class="list-circle list-inside ml-4">
+                <li><strong class="text-emerald-300">"enabled": [boolean]</strong> (true/false)</li>
+                <li><strong class="text-emerald-300">"frequency": [positive number]</strong> (e.g., 2 for every 2nd layer)</li>
+              </ul>
+            </li>
+            <li><strong class="text-blue-300">"architecturalHints"</strong> (top-level, optional)
+              <ul class="list-circle list-inside ml-4">
+                <li><strong class="text-emerald-300">"optimalDataBlockSizeKB": [number | "auto"]</strong> (e.g., 512 or "auto")</li>
+              </ul>
+            </li>
+          </ul>
         </div>
-
         <div class="mt-3 flex gap-3">
-          <div class="ml-auto small help">Editing runs inside a sandbox but uses `eval` to measure the runtime of these functions. Keep code safe and small for very large N.</div>
+          <div class="ml-auto small help">Algorithm defined by JSON is executed in a sandbox. Ensure valid JSON format.</div>
         </div>
       </div>
 
@@ -536,9 +477,9 @@ async function runArchitecture(layers, N){
   </div>
 </div>
 
-<!-- New Tuning Guide Modal -->
+<!-- Existing Tuning Guide Modal (No changes here, linking for completeness) -->
 <div id="tuningGuideModal" class="custom-modal-overlay hidden">
-  <div class="custom-modal-content max-w-xl overflow-y-auto max-h-[90vh]"> <!-- Added overflow-y-auto and max-h-[90vh] -->
+  <div class="custom-modal-content max-w-xl overflow-y-auto max-h-[90vh]">
     <h3 class="text-xl font-bold mb-4">Chip Tuning 101: Boost Your Phone's Brain! 🧠</h3>
     <p class="mb-4">Welcome, future Chip Architect! This guide will help you understand how to make your fictional phone chip perform its best. It's all about balancing **Hardware** (the chip's parts) and **Software** (the code it runs).</p>
 
@@ -551,7 +492,7 @@ async function runArchitecture(layers, N){
           <li>**Worse:** Too many cores can make your chip expensive and hot.</li>
         </ul>
       </li>
-      <li><strong>Clocks (GHz):</strong> This is how fast your cores work. Faster clocks mean more speed!
+      <li><strong>Clocks (GHz):):</strong> This is how fast your cores work. Faster clocks mean more speed!
         <ul class="list-circle list-inside ml-4">
           <li>**Better:** Higher clock speeds for faster processing.</li>
           <li>**Worse:** Too fast, and your chip gets super hot, leading to slowdowns (throttling) and draining the battery.</li>
@@ -616,7 +557,6 @@ async function runArchitecture(layers, N){
   </div>
 </div>
 
-
 <script>
 (function(){
   // Enhanced $ function for robustness and debugging
@@ -629,7 +569,6 @@ async function runArchitecture(layers, N){
   };
 
   // --- Custom Modal Functions ---
-  // These functions include null checks for elements they interact with, making them robust.
   function showCustomAlert(message, title = 'Notification') {
       return new Promise((resolve) => {
           const customModalTitle = $('customModalTitle');
@@ -702,14 +641,220 @@ async function runArchitecture(layers, N){
   }
   // --- End Custom Modal Functions ---
 
+  // --- Algorithm Core Functions (Internal, Hardcoded Implementations) ---
+  // These functions are called by runArchitecture based on the JSON configuration.
+  function createMatrix(rows, cols, metrics){
+    const A = new Array(rows);
+    for(let i=0;i<rows;i++){
+      const row = new Float64Array(cols);
+      for(let j=0;j<cols;j++) row[j] = 0.5; // Fixed value for deterministic results
+      A[i] = row;
+    }
+    metrics.peakBytes = Math.max(metrics.peakBytes, rows*cols*8);
+    return A;
+  }
+
+  // Naive matrix multiplication
+  function multiplyMatricesNaive(A,B, metrics){
+    const M = A.length, K = A[0].length, N = B[0].length;
+    if(B.length !== K) throw new Error("Matrix dimension mismatch in naive multiplication");
+    const C = new Array(M);
+    for(let i=0;i<M;i++){
+      const Ci = new Float64Array(N); 
+      for(let k=0;k<K;k++){
+        const aik = A[i][k];
+        for(let j=0;j<N;j++){
+          Ci[j] += aik * B[k][j];
+          metrics.flops += 2 * 1.05; // Naive method incurs a 5% higher effective FLOP cost due to overhead
+          metrics.iops += 2;
+        }
+      }
+      C[i] = Ci;
+    }
+    metrics.peakBytes = Math.max(metrics.peakBytes, M*N*8);
+    return C;
+  }
+
+  // Blocked matrix multiplication (cache-friendly)
+  function multiplyMatricesBlocked(A,B, metrics, blockSize = 32){
+    const M = A.length, K = A[0].length, N = B[0].length;
+    if(B.length !== K) throw new Error("Matrix dimension mismatch in blocked multiplication");
+    const C = new Array(M);
+    for(let i=0;i<M;i++){ C[i] = new Float64Array(N); }
+
+    const block = blockSize;
+    for(let ii=0; ii<M; ii += block){
+      for(let kk=0; kk<K; kk += block){
+        for(let jj=0; jj<N; jj += block){
+          const iMax = Math.min(ii+block,M);
+          const kMax = Math.min(kk+block,K);
+          const jMax = Math.min(jj+block,N);
+          for(let i=ii;i<iMax;i++){
+            const Ai = A[i];
+            const Ci = C[i];
+            for(let k=kk;k<kMax;k++){
+              const aik = Ai[k];
+              const Bk = B[k];
+              for(let j=jj;j<jMax;j++){
+                Ci[j] += aik * Bk[j];
+                metrics.flops += 2 * 1.0; // Blocked method has no additional effective FLOP cost
+                metrics.iops += 2;
+              }
+            }
+          }
+        }
+      }
+    }
+    metrics.peakBytes = Math.max(metrics.peakBytes, M*N*8);
+    return C;
+  }
+
+  // Relu activation function
+  function applyActivationRelu(M, metrics){
+    const R = M.length, C = M[0].length;
+    const O = new Array(R);
+    for(let i=0;i<R;i++){
+      const row = new Float64Array(C);
+      for(let j=0;j<C;j++){
+        row[j] = M[i][j] > 0 ? M[i][j] : 0; // ReLU
+        metrics.flops += 1;
+        metrics.iops += 1;
+      }
+      O[i] = row;
+    }
+    return O;
+  }
+
+  // Sigmoid activation function
+  function applyActivationSigmoid(M, metrics){
+    const R = M.length, C = M[0].length;
+    const O = new Array(R);
+    for(let i=0;i<R;i++){
+      const row = new Float64Array(C);
+      for(let j=0;j<C;j++){
+        row[j] = 1 / (1 + Math.exp(-M[i][j])); // Sigmoid
+        metrics.flops += 1; // Approximation
+        metrics.iops += 1; // Approximation
+      }
+      O[i] = row;
+    }
+    return O;
+  }
+  
+  // Tanh activation function
+  function applyActivationTanh(M, metrics){
+    const R = M.length, C = M[0].length;
+    const O = new Array(R);
+    for(let i=0;i<R;i++){
+      const row = new Float64Array(C);
+      for(let j=0;j<C;j++){
+        row[j] = Math.tanh(M[i][j]); // Tanh
+        metrics.flops += 1; // Approximation
+        metrics.iops += 1; // Approximation
+      }
+      O[i] = row;
+    }
+    return O;
+  }
+
+  // Add residual connection
+  function addResidual(A, B, metrics){
+    const R = A.length, C = A[0].length;
+    if (R !== B.length || C !== B[0].length) {
+        throw new Error("Matrix dimension mismatch for residual connection");
+    }
+    const O = new Array(R);
+    for(let i=0;i<R;i++){
+      const row = new Float64Array(C);
+      for(let j=0;j<C;j++){
+        row[j] = A[i][j] + B[i][j];
+        metrics.flops += 1;
+        metrics.iops += 1;
+      }
+      O[i] = row;
+    }
+    return O;
+  }
+  // --- End Algorithm Core Functions ---
+
+
+  const DEFAULT_ALGORITHM_JSON = `{
+  "layers": 8,
+  "sequence": [
+    {
+      "type": "matrixMultiply",
+      "method": "naive"
+    },
+    {
+      "type": "activation",
+      "function": "relu"
+    },
+    {
+      "type": "matrixMultiply",
+      "method": "naive"
+    },
+    {
+      "type": "activation",
+      "function": "sigmoid"
+    },
+    {
+      "type": "conditionalResidual",
+      "frequency": 3,
+      "enabled": true
+    }
+  ]
+}`;
+
+  const BLOCKED_ALGORITHM_JSON = `{
+  "layers": 6,
+  "sequence": [
+    { 
+      "type": "matrixMultiply",
+      "method": "blocked",
+      "blockSize": 32
+    },
+    {
+      "type": "activation",
+      "function": "relu"
+    }
+  ],
+  "architecturalHints": {
+    "optimalDataBlockSizeKB": "auto"
+  }
+}`;
+
+  const BATTERY_OPTIMIZED_ALGORITHM_JSON = `{
+  "layers": 5,
+  "sequence": [ 
+    {
+      "type": "matrixMultiply",
+      "method": "blocked",
+      "blockSize": 32
+    },
+    {
+      "type": "activation",
+      "function": "relu"
+    },
+    {
+      "type": "conditionalResidual",
+      "frequency": 1,
+      "enabled": true
+    }
+  ],
+  "architecturalHints": {
+    "optimalDataBlockSizeKB": "auto"
+  }
+}`;
+
 
   const DEFAULT = {
     numPerf: 3, numEff: 4, numAI: 2, numHyper: 1, numGPU: 8,
-    clkPerf: 3.0, clkEff: 2.0, clkHyper: 2.5, clkNPU: 1.4, clkGPU: 1.5, // Updated clocks
+    clkPerf: 3.0, clkEff: 2.0, clkHyper: 2.5, clkNPU: 1.4, clkGPU: 1.5,
     nodeNm: 4, sysMem: 8192,
     battmAh: 5000, coolingW: 7.5, matN: 256, layers: 6,
     dvfsCapMHz: 4200, quantMode: 'fp16', weightFormat: 'fp16',
-    disableThrottling: false, workloadProfile: 'mixed' // New defaults
+    disableThrottling: false, workloadProfile: 'mixed',
+    algorithmJson: DEFAULT_ALGORITHM_JSON // Store the default algorithm JSON
   };
 
   let ppwChart = null;
@@ -720,14 +865,13 @@ async function runArchitecture(layers, N){
   const EFF_GFLOPS_PER_GHZ  = 10;
   const HYPER_GFLOPS_PER_GHZ= 220;
   const AI_TOPS_PER_GHZ = 38;
-  const GPU_TFLOPS_PER_CORE_BASE = 0.002; // Base TFLOPS per GPU core at 1 GHz
-
+  const GPU_TFLOPS_PER_CORE_BASE = 0.002;
   const POW_PERF_W = 0.32;
   const POW_EFF_W  = 0.08;
   const POW_HYPER_W= 1.25;
   const POW_AI_W   = 0.26;
-  const POW_GPU_W_PER_GHZ = 0.15; // Power per GPU core per GHz
-  const BASE_PEAK_W = 2.2; // Base power for the chip at idle/minimal load
+  const POW_GPU_W_PER_GHZ = 0.15;
+  const BASE_PEAK_W = 2.2;
   const CELL_V = 3.85;
 
   function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
@@ -736,35 +880,30 @@ async function runArchitecture(layers, N){
   function nodePerfFactor(nm){ return Math.pow(REF_NODE / Math.max(3, nm), 0.75); }
   function nodePowerFactor(nm){ return Math.pow(Math.max(3, nm) / REF_NODE, 1.35); }
 
-  // Dynamic algorithm efficiency calculation
   function algorithmEfficiency(simulatedFlops, theoreticalFlops){
       if (theoreticalFlops <= 0) return 0;
-      // Efficiency is the ratio of theoretical ideal operations to actual operations performed by the algorithm
-      // Capped between 0.1 (minimum reasonable efficiency) and 1.0 (perfect)
       const efficiency = clamp(theoreticalFlops / simulatedFlops, 0.1, 1.0);
       return efficiency;
   }
 
   function estimateThermals(powerW, coolingW, nodeNm) {
-    // Enhanced thermal model
-    const baseTemp = 30 + (nodeNm - 3) * 1.5; // Baseline influenced by node
-    const effectiveCooling = coolingW * 1.2; // Cooling system effectiveness
-    const heatGenerated = powerW * 3.5; // How much power translates to heat (increased scaling)
+    const baseTemp = 30 + (nodeNm - 3) * 1.5;
+    const effectiveCooling = coolingW * 1.2;
+    const heatGenerated = powerW * 3.5;
     let temp = baseTemp + (heatGenerated - effectiveCooling);
 
-    // Add a penalty for extreme power output
     if (powerW > 15) {
       temp += (powerW - 15) * 2;
     }
-    return clamp(temp, 30, 150); // Clamp temperature to realistic max 150°C
+    return clamp(temp, 30, 150);
   }
 
   function throttleFactor(tempC, disableThrottling){
-    if (disableThrottling) return 1.0; // No throttling if disabled
+    if (disableThrottling) return 1.0;
     if(tempC <= 70) return 1.0;
     if(tempC <= 85) return 1 - (tempC - 70)*0.015;
-    if(tempC <= 100) return 1 - (0.15 + (tempC - 85)*0.03); // More aggressive throttling past 85C
-    return 1 - (0.15 + 0.45 + (tempC - 100)*0.05); // Even more aggressive for very high temps
+    if(tempC <= 100) return 1 - (0.15 + (tempC - 85)*0.03);
+    return 1 - (0.15 + 0.45 + (tempC - 100)*0.05);
   }
 
   function quantMultipliers(mode){
@@ -778,13 +917,11 @@ async function runArchitecture(layers, N){
 
   function applyDVFS(cfg, dvfsCapMHz, tempC, disableThrottling){
     const tempPenalty = disableThrottling ? 1.0 : (tempC > 70 ? (1 - clamp((tempC - 70) / 30, 0, 0.4)) : 1.0);
-    // Apply DVFS proportionally to each core type's clock
     let perfMHz = clamp(cfg.clkPerf*1000, 200, dvfsCapMHz)*tempPenalty;
     let effMHz = clamp(cfg.clkEff*1000, 200, dvfsCapMHz)*tempPenalty;
     let hyperMHz = clamp(cfg.clkHyper*1000, 200, dvfsCapMHz)*tempPenalty;
     let npuMHz = clamp(cfg.clkNPU*1000, 100, dvfsCapMHz)*tempPenalty;
 
-    // Ensure clocks don't drop below their minimums
     perfMHz = Math.max(perfMHz, 200);
     effMHz = Math.max(effMHz, 200);
     hyperMHz = Math.max(hyperMHz, 200);
@@ -798,13 +935,11 @@ async function runArchitecture(layers, N){
     };
   }
 
-  // Safely reads input values from the UI, providing fallbacks and clamping
   function readInputs() {
     const getElementValue = (id, fallback) => {
         const el = $(id);
         if (el) {
             if (el.type === 'checkbox') return el.checked;
-            // Handle number inputs that might return empty string
             if (el.type === 'number' || el.type === 'range') {
               const val = parseFloat(el.value);
               return isNaN(val) ? fallback : val;
@@ -835,11 +970,11 @@ async function runArchitecture(layers, N){
       quantMode: getElementValue('quantMode', 'fp16'),
       weightFormat: getElementValue('weightFormat', 'fp16'),
       disableThrottling: getElementValue('disableThrottling', false),
-      workloadProfile: getElementValue('workloadProfile', 'mixed')
+      workloadProfile: getElementValue('workloadProfile', 'mixed'),
+      algorithmJson: $('algorithmEditor').value // Get JSON string from textarea
     };
   }
 
-  // Applies configuration values to the UI elements
   function applyConfigToUI(cfg){
     const setValue = (id, val) => {
       const el = $(id);
@@ -857,12 +992,12 @@ async function runArchitecture(layers, N){
     setValue('numEff', cfg.numEff);
     setValue('numAI', cfg.numAI);
     setValue('numHyper', cfg.numHyper);
-    setValue('numGPU', cfg.numGPU); // Apply GPU cores
-    setValue('clkPerf', cfg.clkPerf); // Apply Perf Core clock
-    setValue('clkEff', cfg.clkEff);   // Apply Eff Core clock
-    setValue('clkHyper', cfg.clkHyper); // Apply Hyper Core clock
+    setValue('numGPU', cfg.numGPU);
+    setValue('clkPerf', cfg.clkPerf);
+    setValue('clkEff', cfg.clkEff);
+    setValue('clkHyper', cfg.clkHyper);
     setValue('clkNPU', cfg.clkNPU);
-    setValue('clkGPU', cfg.clkGPU); // Apply GPU clock
+    setValue('clkGPU', cfg.clkGPU);
     setValue('nodeNm', cfg.nodeNm);
     setValue('sysMem', cfg.sysMem);
     setValue('battmAh', cfg.battmAh);
@@ -870,24 +1005,28 @@ async function runArchitecture(layers, N){
     setValue('matN', cfg.matN);
     setValue('layers', cfg.layers);
     setValue('dvfsCap', cfg.dvfsCapMHz || 4200);
-    setInnerText('dvfsVal', (cfg.dvfsCapMHz || 4200) + ' MHz'); // Ensure dvfsVal updates
+    setInnerText('dvfsVal', (cfg.dvfsCapMHz || 4200) + ' MHz');
     setValue('quantMode', cfg.quantMode || 'fp16');
     setValue('weightFormat', cfg.weightFormat || 'fp16');
-    setValue('disableThrottling', cfg.disableThrottling || false); // Use setValue for checkbox
+    setValue('disableThrottling', cfg.disableThrottling || false);
     setValue('workloadProfile', cfg.workloadProfile || 'mixed');
+    
+    // Set algorithm JSON
+    const algorithmEditorEl = $('algorithmEditor');
+    if (algorithmEditorEl) {
+        algorithmEditorEl.value = cfg.algorithmJson || DEFAULT_ALGORITHM_JSON;
+    }
     updateNodePerfMeter(cfg.nodeNm);
   }
 
-  // Updates the visual performance meter for the process node
   function updateNodePerfMeter(nodeNm) {
     const nodePerfMeter = $('nodePerfMeter');
     if (nodePerfMeter) {
-        const perf = (1 - (nodeNm - 3) / 7) * 100; // Calculate performance based on node size
+        const perf = (1 - (nodeNm - 3) / 7) * 100;
         nodePerfMeter.style.width = Math.max(10, Math.min(100, perf)) + '%';
     }
   }
 
-  // Compares current configuration with a saved chip configuration
   async function compareWithCurrent(savedCfg, name){
     const cur = readInputs();
     const diffs = [];
@@ -895,428 +1034,33 @@ async function runArchitecture(layers, N){
     for(const k of keys){
       if(savedCfg[k] !== cur[k]) diffs.push(`${k}: saved=${savedCfg[k]} vs current=${cur[k]}`);
     }
+    // Also compare algorithm JSON
+    if (savedCfg.algorithmJson !== cur.algorithmJson) {
+      diffs.push(`Algorithm JSON: differ`);
+    }
     await showCustomAlert('Comparing current with "'+name+'":\n\n' + (diffs.length? diffs.map(d => `- ${d}`).join('\n') : 'No differences found.'), 'Comparison Results');
   }
 
-  // Packs current UI configuration and code into an object for saving/exporting
   function packConfig(){
     const cfg = readInputs();
-    const codeEditorEl = $('codeEditor');
-    cfg.code = codeEditorEl ? codeEditorEl.innerText : ''; // Safely get code
     return cfg;
   }
 
-  // Sets the default algorithm code in the editor
-  function setDefaultCode(){
-    const codeEditorEl = $('codeEditor');
-    if (!codeEditorEl) return;
-    const code = `// === Algorithm core (editable) ===
-// The simulator measures runtime, FLOPs, integer-like ops, and peak memory.
-// Edit multiplyMatrices to try tiling, blocking, or Strassen-like ideas.
-// Keep functions: createMatrix, multiplyMatrices, relu, applyActivation, runArchitecture, addResidual (if used)
-
-// Metrics (flops, iops, peakBytes) are passed to functions for accumulation.
-// Architectural hints can also be returned from runArchitecture.
-
-function createMatrix(rows, cols, metrics){
-  const A = new Array(rows);
-  for(let i=0;i<rows;i++){
-    const row = new Float64Array(cols);
-    for(let j=0;j<cols;j++) row[j] = 0.5; // Use a fixed value for deterministic results
-    A[i] = row;
-  }
-  metrics.peakBytes = Math.max(metrics.peakBytes, rows*cols*8);
-  return A;
-}
-
-// naive matmul (default) - straightforward triple loop
-function multiplyMatrices(A,B, metrics){
-  const M = A.length, K = A[0].length, N = B[0].length;
-  if(B.length !== K) throw new Error("Matrix dimension mismatch");
-  const C = new Array(M);
-  for(let i=0;i<M;i++){
-    const Ci = new Float64Array(N);
-    for(let k=0;k<K;k++){
-      const aik = A[i][k];
-      for(let j=0;j<N;j++){
-        Ci[j] += aik * B[k][j];
-        metrics.flops += 2; // multiply + add
-        metrics.iops += 2;
-      }
-    }
-    C[i] = Ci;
-  }
-  metrics.peakBytes = Math.max(metrics.peakBytes, M*N*8);
-  return C;
-}
-
-function relu(x, metrics){ metrics.flops += 1; metrics.iops += 1; return x>0?x:0; }
-
-function applyActivation(M, metrics){
-  const R = M.length, C = M[0].length;
-  const O = new Array(R);
-  for(let i=0;i<R;i++){
-    const row = new Float64Array(C);
-    for(let j=0;j<C;j++){
-      row[j] = relu(M[i][j], metrics);
-    }
-    O[i] = row;
-  }
-  return O;
-}
-
-function addResidual(A, B, metrics){
-  const R = A.length, C = A[0].length;
-  const O = new Array(R);
-  for(let i=0;i<R;i++){
-    const row = new Float64Array(C);
-    for(let j=0;j<C;j++){
-      row[j] = A[i][j] + B[i][j];
-      metrics.flops += 1;
-      metrics.iops += 1;
-    }
-    O[i] = row;
-  }
-  return O;
-}
-
-async function runArchitecture(layers, N){
-  const metrics = { flops: 0, iops: 0, peakBytes: 0 };
-  const layerMetrics = [];
-  let X = createMatrix(N,N, metrics);
-
-  const optimalDataBlockSizeKB = Math.ceil((N * N * 8) / 1024); // Placeholder for algorithm-derived optimal data block size
-
-  const weights = new Array(layers);
-  for(let L=0; L<layers; L++){
-    weights[L] = createMatrix(N,N, metrics);
-  }
-
-  const t0 = performance.now();
-  for(let L=0; L<layers; L++){
-    const local = { flops: 0, iops: 0, peakBytes: 0 };
-    const W = weights[L];
-    let Z = multiplyMatrices(X, W, local);
-
-    if(L % 3 === 0){
-      Z = addResidual(Z, X, local);
-    }
-
-    X = applyActivation(Z, local);
-    layerMetrics.push(local);
-
-    if(L%2===0) await new Promise(r=>setTimeout(r,0));
-  }
-  const t1 = performance.now();
-
-  for(const m of layerMetrics){
-    metrics.flops += m.flops;
-    metrics.iops += m.iops;
-    metrics.peakBytes = Math.max(metrics.peakBytes, m.peakBytes);
-  }
-
-  return {
-    ms: t1 - t0,
-    flops: metrics.flops,
-    iops: metrics.iops,
-    peakBytes: metrics.peakBytes,
-    architecturalHints: {
-      optimalDataBlockSizeKB: optimalDataBlockSizeKB,
-      // Add more specific architectural hints here if your algorithm requires/benefits from them
-    }
-  };
-}
-// === end algorithm core ===`;
-    codeEditorEl.innerText = code;
-  }
-
-  // Sets an example optimized (blocked matrix multiplication) code
-  function setExampleOptimized(){
-    const codeEditorEl = $('codeEditor');
-    if (!codeEditorEl) return;
-    const code = `// === Example: Blocked matrix multiplication (cache-friendly) ===
-// The simulator measures runtime, FLOPs, integer-like ops, and peak memory.
-// Edit multiplyMatrices to try tiling, blocking, or Strassen-like ideas.
-// Keep functions: createMatrix, multiplyMatrices, relu, applyActivation, runArchitecture, addResidual (if used)
-
-// Metrics (flops, iops, peakBytes) are passed to functions for accumulation.
-// Architectural hints can also be returned from runArchitecture.
-
-function createMatrix(rows, cols, metrics){
-  const A = new Array(rows);
-  for(let i=0;i<rows;i++){
-    const row = new Float64Array(cols);
-    for(let j=0;j<cols;j++) row[j] = 0.5; // Use a fixed value
-    A[i] = row;
-  }
-  metrics.peakBytes = Math.max(metrics.peakBytes, rows*cols*8);
-  return A;
-}
-
-// blocked matmul with block size 32 (works well for moderate sizes)
-function multiplyMatrices(A,B, metrics){
-  const M = A.length, K = A[0].length, N = B[0].length;
-  if(B.length !== K) throw new Error("Matrix dimension mismatch");
-  const C = new Array(M);
-  for(let i=0;i<M;i++){ C[i] = new Float64Array(N); }
-  const block = 32; // This is the architectural hint for optimal block size!
-  for(let ii=0; ii<M; ii += block){
-    for(let kk=0; kk<K; kk += block){
-      for(let jj=0; jj<N; jj += block){
-        const iMax = Math.min(ii+block,M);
-        const kMax = Math.min(kk+block,K);
-        const jMax = Math.min(jj+block,N);
-        for(let i=ii;i<iMax;i++){
-          const Ai = A[i];
-          const Ci = C[i];
-          for(let k=kk;k<kMax;k++){
-            const aik = Ai[k];
-            const Bk = B[k];
-            for(let j=jj;j<jMax;j++){
-              Ci[j] += aik * Bk[j];
-              metrics.flops += 2; metrics.iops += 2;
-            }
-          }
-        }
-      }
+  function setAlgorithmJson(jsonString) {
+    const algorithmEditorEl = $('algorithmEditor');
+    if (algorithmEditorEl) {
+        algorithmEditorEl.value = jsonString;
     }
   }
-  metrics.peakBytes = Math.max(metrics.peakBytes, M*N*8);
-  return C;
-}
 
-function relu(x, metrics){ metrics.flops += 1; metrics.iops += 1; return x>0?x:0; }
-
-function applyActivation(M, metrics){
-  const R = M.length, C = M[0].length;
-  const O = new Array(R);
-  for(let i=0;i<R;i++){
-    const row = new Float64Array(C);
-    for(let j=0;j<C;j++){
-      row[j] = relu(M[i][j], metrics);
+  function beautifyJson(jsonString) {
+    try {
+      const obj = JSON.parse(jsonString);
+      return JSON.stringify(obj, null, 2);
+    } catch (e) {
+      showCustomAlert('Invalid JSON. Cannot beautify: ' + e.message, 'JSON Error');
+      return jsonString; // Return original if invalid
     }
-    O[i] = row;
-  }
-  return O;
-}
-
-function addResidual(A, B, metrics){
-  const R = A.length, C = A[0].length;
-  const O = new Array(R);
-  for(let i=0;i<R;i++){
-    const row = new Float64Array(C);
-    for(let j=0;j<C;j++){
-      row[j] = A[i][j] + B[i][j];
-      metrics.flops += 1;
-      metrics.iops += 1;
-    }
-    O[i] = row;
-  }
-  return O;
-}
-
-async function runArchitecture(layers, N){
-  const metrics = { flops: 0, iops: 0, peakBytes: 0 };
-  let X = createMatrix(N,N, metrics);
-
-  // For blocked multiplication, the optimal data block size depends on the 'block' variable.
-  // We'll approximate an optimal cache size needed based on this.
-  const idealBlockSize = 32; // From the multiplyMatrices function for this example
-  const optimalDataBlockSizeKB = Math.ceil((idealBlockSize * idealBlockSize * 8) / 1024); // KB per block (approx)
-
-  const t0 = performance.now();
-  for(let L=0; L<layers; L++){
-    const W = createMatrix(N,N, metrics);
-    const Z = multiplyMatrices(X,W, metrics);
-
-    // if(L % 2 === 0){ // Example: every 2nd layer
-    //   Z = addResidual(Z, X, metrics);
-    // }
-
-    X = applyActivation(Z, metrics);
-    if(L%1===0) await new Promise(r=>setTimeout(r,0));
-  }
-  const t1 = performance.now();
-  return {
-    ms: t1 - t0,
-    flops: metrics.flops,
-    iops: metrics.iops,
-    peakBytes: metrics.peakBytes,
-    architecturalHints: {
-      optimalDataBlockSizeKB: optimalDataBlockSizeKB,
-      // Can add more hints here
-    }
-  };
-}
-// === end blocked example ===`;
-    codeEditorEl.innerText = code;
-  }
-
-  // Sets an example battery-optimized code
-  function setExampleBatteryOptimized(){
-    const codeEditorEl = $('codeEditor');
-    if (!codeEditorEl) return;
-    const code = `// === Example: Battery Optimized - Blocked Matrix Multiplication ===
-// This algorithm prioritizes battery efficiency by minimizing off-chip memory access,
-// which is a major power consumer. It achieves this through 'blocking'.
-//
-// Blocking works by dividing large matrices into smaller sub-matrices (blocks)
-// that can fit into the CPU's fast, power-efficient caches (like L1/L2).
-// By reusing data extensively from cache before fetching new data from main memory,
-// the number of expensive memory transactions is drastically reduced.
-//
-// Key to battery saving:
-// 1. Fewer memory accesses: Directly saves power by reducing I/O.
-// 2. Faster execution (indirectly): Reduces the total time the chip spends in an active,
-//    higher-power state.
-// 3. Better cache utilization: Keeps data closer to the processing units, reducing
-//    energy spent on long-distance data transfers.
-
-function createMatrix(rows, cols, metrics){
-  const A = new Array(rows);
-  for(let i=0;i<rows;i++){
-    const row = new Float64Array(cols);
-    for(let j=0;j<cols;j++) row[j] = 0.5; // Fixed value for deterministic results
-    A[i] = row;
-  }
-  metrics.peakBytes = Math.max(metrics.peakBytes, rows*cols*8);
-  return A;
-}
-
-// Blocked matrix multiplication for battery efficiency
-function multiplyMatrices(A,B, metrics){
-  const M = A.length, K = A[0].length, N = B[0].length;
-  if(B.length !== K) throw new Error("Matrix dimension mismatch");
-  const C = new Array(M);
-  for(let i=0;i<M;i++){ C[i] = new Float64Array(N); }
-
-  // Optimal block size is crucial for cache efficiency.
-  // A typical block size for L1/L2 cache is around 32-64.
-  const block = 32; // This 'block' size aims to fit data into cache
-
-  for(let ii=0; ii<M; ii += block){
-    for(let kk=0; kk<K; kk += block){
-      for(let jj=0; jj<N; jj += block){
-        const iMax = Math.min(ii+block,M);
-        const kMax = Math.min(kk+block,K);
-        const jMax = Math.min(jj+block,N);
-
-        // Process current block
-        for(let i=ii;i<iMax;i++){
-          const Ai = A[i];
-          const Ci = C[i];
-          for(let k=kk;k<kMax;k++){
-            const aik = Ai[k];
-            const Bk = B[k];
-            for(let j=jj;j<jMax;j++){
-              Ci[j] += aik * Bk[j];
-              metrics.flops += 2; metrics.iops += 2;
-            }
-          }
-        }
-      }
-    }
-  }
-  metrics.peakBytes = Math.max(metrics.peakBytes, M*N*8);
-  return C;
-}
-
-function relu(x, metrics){ metrics.flops += 1; metrics.iops += 1; return x>0?x:0; }
-
-function applyActivation(M, metrics){
-  const R = M.length, C = M[0].length;
-  const O = new Array(R);
-  for(let i=0;i<R;i++){
-    const row = new Float64Array(C);
-    for(let j=0;j<C;j++){
-      row[j] = relu(M[i][j], metrics);
-    }
-    O[i] = row;
-  }
-  return O;
-}
-
-function addResidual(A, B, metrics){
-  const R = A.length, C = A[0].length;
-  const O = new Array(R);
-  for(let i=0;i<R;i++){
-    const row = new Float64Array(C);
-    for(let j=0;j<C;j++){
-      row[j] = A[i][j] + B[i][j];
-      metrics.flops += 1;
-      metrics.iops += 1;
-    }
-    O[i] = row;
-  }
-  return O;
-}
-
-async function runArchitecture(layers, N){
-  const metrics = { flops: 0, iops: 0, peakBytes: 0 };
-  let X = createMatrix(N,N, metrics);
-
-  // The optimal data block size derived from the 'block' variable.
-  // This value helps the simulator understand the memory access pattern.
-  const idealBlockSize = 32; // Should match the 'block' variable in multiplyMatrices
-  const optimalDataBlockSizeKB = Math.ceil((idealBlockSize * idealBlockSize * 8) / 1024); // KB per block (approx)
-
-  const t0 = performance.now();
-  for(let L=0; L<layers; L++){
-    const W = createMatrix(N,N, metrics);
-    const Z = multiplyMatrices(X,W, metrics);
-
-    // Example of adding a residual connection, if desired for the neural network architecture
-    // if(L % 2 === 0){
-    //   Z = addResidual(Z, X, metrics);
-    // }
-
-    X = applyActivation(Z, metrics);
-    // Yield execution to the browser to prevent UI freezes during long simulations
-    if(L%1===0) await new Promise(r=>setTimeout(r,0));
-  }
-  const t1 = performance.now();
-  return {
-    ms: t1 - t0,
-    flops: metrics.flops,
-    iops: metrics.iops,
-    peakBytes: metrics.peakBytes,
-    architecturalHints: {
-      optimalDataBlockSizeKB: optimalDataBlockSizeKB,
-      // You can add more specific architectural hints here if your algorithm requires/benefits from them
-    }
-  };
-}
-// === end battery optimized example ===`;
-    codeEditorEl.innerText = code;
-  }
-
-
-  // Basic code beautifier (indentation only)
-  function beautifyCode(code) {
-    let indentLevel = 0;
-    let formattedCode = [];
-    const lines = code.split('\n');
-
-    lines.forEach(line => {
-      line = line.trim();
-      if (line.length === 0) {
-        formattedCode.push('');
-        return;
-      }
-
-      // Decrease indent for closing braces/brackets
-      if (line.startsWith('}') || line.startsWith(']') || line.startsWith(')')) {
-        indentLevel = Math.max(0, indentLevel - 1);
-      }
-
-      formattedCode.push(' '.repeat(indentLevel * 2) + line); // 2 spaces per indent
-
-      // Increase indent for opening braces/brackets
-      if (line.endsWith('{') || line.endsWith('[') || line.endsWith('(')) {
-        indentLevel++;
-      }
-    });
-    return formattedCode.join('\n');
   }
 
   // --- Local Storage Functions ---
@@ -1399,8 +1143,6 @@ async function runArchitecture(layers, N){
         const cfg = loadChip(name);
         if (cfg) {
           applyConfigToUI(cfg);
-          const codeEditorEl = $('codeEditor');
-          if(codeEditorEl && cfg.code) codeEditorEl.innerText = cfg.code;
           const chipTagEl = $('chipTag');
           if (chipTagEl) chipTagEl.innerText = name;
           await showCustomAlert('Loaded chip: ' + name, 'Success');
@@ -1438,54 +1180,44 @@ async function runArchitecture(layers, N){
   }
 
   function calculatePrice(cfg) {
-    let price = 150; // Base cost for the chip itself
+    let price = 150;
 
-    // Core costs
     price += cfg.numPerf * 20;
     price += cfg.numEff * 5;
     price += cfg.numAI * 35;
     price += cfg.numHyper * 45;
     price += cfg.numGPU * 10;
 
-    // Clock speed multipliers (higher clocks are more expensive per core)
     price += (cfg.clkPerf - 0.4) * 10 * cfg.numPerf;
     price += (cfg.clkEff - 0.4) * 5 * cfg.numEff;
     price += (cfg.clkHyper - 0.4) * 15 * cfg.numHyper;
     price += (cfg.clkNPU - 0.3) * 12 * cfg.numAI;
     price += (cfg.clkGPU - 0.5) * 8 * cfg.numGPU;
 
-    // Process node cost (smaller nodes are exponentially more expensive)
-    // 7nm is baseline. For every nm smaller, cost increases, for every nm larger, cost decreases
-    price += Math.pow((7 - cfg.nodeNm), 2) * 20; // Quadratic increase/decrease
+    price += Math.pow((7 - cfg.nodeNm), 2) * 20;
 
-    // System Memory cost (linear with size)
-    price += (cfg.sysMem / 1024) * 2; // $2 per GB
+    price += (cfg.sysMem / 1024) * 2;
 
-    // Cooling budget (more cooling adds to cost)
     price += cfg.coolingW * 5;
 
-    // Battery capacity (linear with mAh)
-    price += (cfg.battmAh / 1000) * 0.5; // $0.50 per 1000 mAh
+    price += (cfg.battmAh / 1000) * 0.5;
 
-    // Add a small cost for quantization mode (more advanced modes might have minor IP cost)
     if (cfg.quantMode === 'int8') price += 5;
     if (cfg.quantMode === 'fp32') price += 2;
 
-    // Complexity of algorithm (indirectly from layers and matrix size)
-    price += (cfg.layers * cfg.matN / 1000) * 0.1; // Small additional cost for designing/testing complex architectures
+    price += (cfg.layers * cfg.matN / 1000) * 0.1;
 
-    // Ensure price is not negative
     return Math.max(100, price);
   }
 
   function initChart() {
     const ctx = $('ppwChart');
-    if (!ctx) return; // Exit if canvas element not found
+    if (!ctx) return;
 
     const chartType = chartIsLog ? 'logarithmic' : 'linear';
 
     if (ppwChart) {
-      ppwChart.destroy(); // Destroy existing chart if it exists
+      ppwChart.destroy();
     }
 
     ppwChart = new Chart(ctx, {
@@ -1582,99 +1314,213 @@ async function runArchitecture(layers, N){
     return descriptions;
   }
 
+  // --- New runArchitecture function, driven by JSON config ---
+  async function runArchitectureWithJson(layers, N, algorithmConfig) {
+    const metrics = { flops: 0, iops: 0, peakBytes: 0 };
+    let X = createMatrix(N,N, metrics);
+    let currentOptimalBlockSize = 0; // To track if a blocked method is used
+
+    // The actual execution time calculation using performance.now() is removed here
+    // as it introduces non-determinism. We will calculate a deterministic 'ms' value below.
+    for(let L=0; L<layers; L++){
+      let Y = X; // For residual connections, Y stores the input before processing
+      // Validate and execute each operation in the sequence
+      for (let i = 0; i < algorithmConfig.sequence.length; i++) {
+        const op = algorithmConfig.sequence[i];
+        try {
+          if (op.type === "matrixMultiply") {
+            const W = createMatrix(N, N, metrics);
+            if (op.method === "naive") {
+              X = multiplyMatricesNaive(X, W, metrics);
+            } else if (op.method === "blocked") {
+              const blockSize = typeof op.blockSize === 'number' && op.blockSize > 0 ? op.blockSize : 32;
+              X = multiplyMatricesBlocked(X, W, metrics, blockSize);
+              currentOptimalBlockSize = Math.max(currentOptimalBlockSize, blockSize);
+            } else {
+              throw new Error(`Unknown matrix multiply method: '${op.method}'. Supported: 'naive', 'blocked'.`);
+            }
+          } else if (op.type === "activation") {
+            if (op.function === "relu") {
+              X = applyActivationRelu(X, metrics);
+            } else if (op.function === "sigmoid") {
+              X = applyActivationSigmoid(X, metrics);
+            } else if (op.function === "tanh") {
+              X = applyActivationTanh(X, metrics);
+            }
+            else {
+              throw new Error(`Unknown activation function: '${op.function}'. Supported: 'relu', 'sigmoid', 'tanh'.`);
+            }
+          } else if (op.type === "conditionalResidual") {
+            if (op.enabled && (typeof op.frequency === 'number' && op.frequency > 0 && L % op.frequency === 0)) {
+              X = addResidual(X, Y, metrics); // Add residual connection
+            }
+          } else {
+            throw new Error(`Unknown operation type: '${op.type}'. Supported: 'matrixMultiply', 'activation', 'conditionalResidual'.`);
+          }
+        } catch (opErr) {
+            throw new Error(`Error in sequence operation ${i} (type: ${op.type || 'N/A'}): ${opErr.message}`);
+        }
+      }
+      if(L%2===0) await new Promise(r=>setTimeout(r,0)); // Yield to browser
+    }
+
+    // Determine optimalDataBlockSizeKB based on user hint or inferred value
+    let finalOptimalBlockSizeKB = 0;
+    if (algorithmConfig.architecturalHints && typeof algorithmConfig.architecturalHints.optimalDataBlockSizeKB === 'number') {
+        finalOptimalBlockSizeKB = algorithmConfig.architecturalHints.optimalDataBlockSizeKB;
+    } else if (currentOptimalBlockSize > 0) {
+        finalOptimalBlockSizeKB = Math.ceil((currentOptimalBlockSize * currentOptimalBlockSize * 8) / 1024);
+    } else {
+        // Fallback to full matrix size as a hint if no specific block hint and not explicitly set by user
+        finalOptimalBlockSizeKB = Math.ceil((N * N * 8) / 1024);
+    }
+
+    // Calculate a deterministic 'ms' based on total FLOPs
+    // Calibrated so that the default algorithm (256x256, 6 layers, naive) results in approx. 100ms.
+    const FLOP_RATE_MPS_CALIBRATED = 21100000; // ~21.1 million FLOPs per millisecond
+    const deterministicMs = metrics.flops / FLOP_RATE_MPS_CALIBRATED;
+
+    return {
+      ms: deterministicMs, // Now always deterministic
+      flops: metrics.flops,
+      iops: metrics.iops,
+      peakBytes: metrics.peakBytes,
+      architecturalHints: {
+        optimalDataBlockSizeKB: finalOptimalBlockSizeKB,
+      }
+    };
+  }
+
+  // --- JSON Schema Validation for Algorithm Configuration ---
+  function validateAlgorithmConfig(config, N) { // Pass matrix size N for semantic checks
+    const errors = [];
+
+    if (typeof config.layers !== 'number' || config.layers <= 0) {
+      errors.push("Top-level property 'layers' must be a positive number.");
+    }
+    if (!Array.isArray(config.sequence)) {
+      errors.push("Top-level property 'sequence' must be an array.");
+    } else {
+      if (config.sequence.length === 0) {
+          errors.push("The 'sequence' array cannot be empty. Define at least one operation.");
+      }
+      for (let i = 0; i < config.sequence.length; i++) {
+        const op = config.sequence[i];
+        if (typeof op !== 'object' || op === null) {
+          errors.push(`Sequence item ${i}: must be an object.`);
+          continue;
+        }
+
+        if (typeof op.type !== 'string') {
+          errors.push(`Sequence item ${i}: 'type' property is missing or not a string.`);
+          continue; // Skip further validation for this op if type is missing
+        }
+
+        switch (op.type) {
+          case 'matrixMultiply':
+            if (op.method !== 'naive' && op.method !== 'blocked') {
+              errors.push(`Sequence item ${i} (matrixMultiply): 'method' must be 'naive' or 'blocked'. Found: '${op.method}'`);
+            }
+            if (op.method === 'blocked' && typeof op.blockSize !== 'number') {
+              errors.push(`Sequence item ${i} (matrixMultiply, blocked): 'blockSize' must be a number.`);
+            } else if (op.method === 'blocked' && typeof op.blockSize === 'number') {
+              if (op.blockSize <= 0) {
+                errors.push(`Sequence item ${i} (matrixMultiply, blocked): 'blockSize' must be a positive number.`);
+              }
+              if (op.blockSize > N) {
+                errors.push(`Sequence item ${i} (matrixMultiply, blocked): 'blockSize' (${op.blockSize}) cannot be larger than the matrix size N (${N}).`);
+              }
+              // Check if it's a power of 2, which is common for block sizes.
+              if ((op.blockSize & (op.blockSize - 1)) !== 0) {
+                errors.push(`Sequence item ${i} (matrixMultiply, blocked): 'blockSize' (${op.blockSize}) is not a power of two. This is recommended for performance.`);
+              }
+            }
+            break;
+          case 'activation':
+            if (op.function !== 'relu' && op.function !== 'sigmoid' && op.function !== 'tanh') {
+              errors.push(`Sequence item ${i} (activation): 'function' must be 'relu', 'sigmoid', or 'tanh'. Found: '${op.function}'`);
+            }
+            break;
+          case 'conditionalResidual':
+            if (typeof op.enabled !== 'boolean') {
+              errors.push(`Sequence item ${i} (conditionalResidual): 'enabled' must be a boolean (true/false).`);
+            }
+            if (typeof op.frequency !== 'number' || op.frequency <= 0) {
+              errors.push(`Sequence item ${i} (conditionalResidual): 'frequency' must be a positive number.`);
+            }
+            break;
+          default:
+            errors.push(`Sequence item ${i}: Unknown operation type '${op.type}'. Supported types: 'matrixMultiply', 'activation', 'conditionalResidual'.`);
+        }
+      }
+    }
+
+    if (config.architecturalHints && config.architecturalHints.optimalDataBlockSizeKB !== undefined) {
+      const hint = config.architecturalHints.optimalDataBlockSizeKB;
+      if (typeof hint !== 'number' && hint !== 'auto') {
+        errors.push("architecturalHints.optimalDataBlockSizeKB must be a number or the string 'auto'.");
+      }
+      if (typeof hint === 'number' && hint < 0) {
+          errors.push("architecturalHints.optimalDataBlockSizeKB (if number) must be non-negative.");
+      }
+    }
+
+    return errors;
+  }
+
   async function runSimulation(){
     const loadingOverlay = $('loadingOverlay');
     const progressText = $('progressText');
     if (loadingOverlay) loadingOverlay.style.display = 'flex';
     if (progressText) progressText.innerText = 'Initializing...';
     
-    // Remove thermal-critical class if present
     document.body.classList.remove('thermal-critical');
     await new Promise(r=>setTimeout(r,20));
 
     try {
       const cfg = readInputs();
-      const codeEditorEl = $('codeEditor');
-      const code = codeEditorEl ? codeEditorEl.innerText : '';
 
+      // --- Pre-simulation Hardware Parameter Validation & Warnings ---
+      const warnings = [];
       if(cfg.numPerf + cfg.numEff + cfg.numHyper + cfg.numAI + cfg.numGPU <= 0)
-        throw new Error('At least one core type required.');
-      if(cfg.clkPerf > 5) await showCustomAlert('Warning: Performance Core clock above typical max (5 GHz), results may be unrealistic.', 'Warning');
-      if(cfg.clkEff > 3) await showCustomAlert('Warning: Efficiency Core clock above typical max (3 GHz), results may be unrealistic.', 'Warning');
-      if(cfg.clkHyper > 4) await showCustomAlert('Warning: Hyper Core clock above typical max (4 GHz), results may be unrealistic.', 'Warning');
-      if(cfg.clkNPU > 3) await showCustomAlert('Warning: NPU clock above typical max (3 GHz), results may be unrealistic.', 'Warning');
-      if(cfg.clkGPU > 2.5) await showCustomAlert('Warning: GPU clock above typical max (2.5 GHz), results may be unrealistic.', 'Warning');
-      if(cfg.nodeNm < 3 || cfg.nodeNm > 14) await showCustomAlert('Warning: Process node should be between 3 and 14 nm for realistic simulation.', 'Warning');
+        warnings.push('At least one core type is required for simulation.');
+      if(cfg.clkPerf > 5) warnings.push('Performance Core clock is above typical max (5 GHz), results may be unrealistic.');
+      if(cfg.clkEff > 3) warnings.push('Efficiency Core clock is above typical max (3 GHz), results may be unrealistic.');
+      if(cfg.clkHyper > 4) warnings.push('Hyper Core clock is above typical max (4 GHz), results may be unrealistic.');
+      if(cfg.clkNPU > 3) warnings.push('NPU clock is above typical max (3 GHz), results may be unrealistic.');
+      if(cfg.clkGPU > 2.5) warnings.push('GPU clock is above typical max (2.5 GHz), results may be unrealistic.');
+      if(cfg.nodeNm < 3 || cfg.nodeNm > 14) warnings.push('Process node should be between 3 and 14 nm for realistic simulation.');
       if(cfg.matN < 16 || cfg.matN > 1024)
-        throw new Error('Matrix size must be between 16 and 1024.');
+        warnings.push('Matrix size must be between 16 and 1024. Current: ' + cfg.matN);
+      if(cfg.layers < 1 || cfg.layers > 64)
+        warnings.push('NN Layers must be between 1 and 64. Current: ' + cfg.layers);
+
+      if (warnings.length > 0) {
+          await showCustomAlert('Hardware Configuration Warnings:\n\n' + warnings.map(w => `- ${w}`).join('\n'), 'Configuration Warning');
+          // Decide if you want to stop simulation here or just warn. For now, we continue.
+      }
+      // --- End Pre-simulation Hardware Parameter Validation ---
+
 
       let archResult = null;
+      let algorithmConfigParsed;
       try {
-        if (progressText) progressText.innerText = 'Evaluating algorithm...';
+        if (progressText) progressText.innerText = 'Parsing algorithm JSON...';
+        algorithmConfigParsed = JSON.parse(cfg.algorithmJson);
 
-        // Safely execute the user-provided code in a sandboxed manner
-        const sandboxFunctionText = `
-          ${code}
-          return {
-            createMatrix: typeof createMatrix !== 'undefined' ? createMatrix : null,
-            multiplyMatrices: typeof multiplyMatrices !== 'undefined' ? multiplyMatrices : null,
-            relu: typeof relu !== 'undefined' ? relu : null,
-            applyActivation: typeof applyActivation !== 'undefined' ? applyActivation : null,
-            addResidual: typeof addResidual !== 'undefined' ? addResidual : null,
-            runArchitecture: typeof runArchitecture !== 'undefined' ? runArchitecture : null
-          };
-        `;
-
-        // Create a new function from the string.
-        const sandboxFunc = new Function(sandboxFunctionText);
-        const sandboxExports = await sandboxFunc(); // Execute the dynamically created function
-
-        // Destructure functions from sandboxExports
-        const { createMatrix, multiplyMatrices, relu, applyActivation, addResidual, runArchitecture: runArch } = sandboxExports;
-
-        // Make sure all required functions are present
-        if(typeof createMatrix !== 'function' || typeof multiplyMatrices !== 'function' ||
-           typeof relu !== 'function' || typeof applyActivation !== 'function' ||
-           typeof runArch !== 'function') {
-          throw new Error('One or more required functions (createMatrix, multiplyMatrices, relu, applyActivation, runArchitecture) not found or invalid in your code. Please ensure they are defined.');
+        // --- Algorithm JSON Schema Validation (before execution) ---
+        const algorithmValidationErrors = validateAlgorithmConfig(algorithmConfigParsed, cfg.matN);
+        if (algorithmValidationErrors.length > 0) {
+            throw new Error("Invalid Algorithm JSON:\n" + algorithmValidationErrors.map(e => `- ${e}`).join('\n'));
         }
+        // --- End Algorithm JSON Schema Validation ---
 
-        // Override global functions with sandboxed versions
-        // This makes sure the sandbox's functions are called from within runArch
-        const originalFunctions = {
-            createMatrix: window.createMatrix,
-            multiplyMatrices: window.multiplyMatrices,
-            relu: window.relu,
-            applyActivation: window.applyActivation,
-            addResidual: window.addResidual
-        };
-
-        window.createMatrix = createMatrix;
-        window.multiplyMatrices = multiplyMatrices;
-        window.relu = relu;
-        window.applyActivation = applyActivation;
-        window.addResidual = addResidual;
-
-
-        if(cfg.layers > 24)
-          await showCustomAlert('Warning: Layers > 24 may cause slow or unrealistic simulations.', 'Warning');
-        if(cfg.sysMem < (cfg.matN * cfg.matN * 8 * cfg.layers) / (1024*1024))
-          await showCustomAlert('Warning: System memory may be insufficient for this matrix size and layers.', 'Warning');
-
-        archResult = await runArch(cfg.layers, cfg.matN);
-        if(!archResult || typeof archResult.ms !== 'number' || typeof archResult.flops !== 'number' || !archResult.architecturalHints)
-          throw new Error('Invalid runArchitecture result. Missing ms, flops, or architecturalHints.');
-
-        // Restore original functions
-        window.createMatrix = originalFunctions.createMatrix;
-        window.multiplyMatrices = originalFunctions.multiplyMatrices;
-        window.relu = originalFunctions.relu;
-        window.applyActivation = originalFunctions.applyActivation;
-        window.addResidual = originalFunctions.addResidual;
-
+        if (progressText) progressText.innerText = 'Evaluating algorithm...';
+        archResult = await runArchitectureWithJson(cfg.layers, cfg.matN, algorithmConfigParsed);
 
       } catch(err) {
-        await showCustomAlert('Algorithm error: ' + (err.message || err), 'Algorithm Error');
+        await showCustomAlert('Algorithm Configuration Error:\n' + (err.message || err), 'Algorithm Error');
+        console.error("Detailed Algorithm Error:", err);
         if (loadingOverlay) loadingOverlay.style.display = 'none';
         return;
       }
@@ -1685,38 +1531,41 @@ async function runArchitecture(layers, N){
       const perfF = nodePerfFactor(cfg.nodeNm);
       const powF = nodePowerFactor(cfg.nodeNm);
 
-      // R0: Raw Algorithmic FLOPs/Runtime (from Sandbox)
-      const r0_ms = archResult.ms;
+      const r0_ms = archResult.ms; // This is now deterministic from runArchitectureWithJson
       const r0_flops = archResult.flops;
       const r0_peakBytes = archResult.peakBytes;
 
-      // Theoretical FLOPs for matrix multiplication (2*N^3 for each layer)
-      // This is the ideal FLOP count for the problem, not necessarily what the algo does
       const theoreticalMathFlopsIdeal = cfg.layers * 2 * Math.pow(cfg.matN, 3);
-
-      // Algorithm Efficiency: How close the algorithm's FLOPs are to the ideal minimal FLOPs
       const algEff = algorithmEfficiency(r0_flops, theoreticalMathFlopsIdeal);
 
-      // Architectural Alignment: How well the hardware's sysMem matches the algorithm's optimal data block size
       let archAlignmentFactor = 1.0;
       let archAlignmentAdvice = '';
       const optimalDataBlockSizeKB = archResult.architecturalHints.optimalDataBlockSizeKB;
-      const systemCacheEquivalentKB = cfg.sysMem; // Simple equivalence for now, can be refined for L1/L2/L3
+      const systemCacheEquivalentKB = cfg.sysMem; // Simplified, treating all sysMem as cache
 
-      if (optimalDataBlockSizeKB && systemCacheEquivalentKB) {
-          if (optimalDataBlockSizeKB < (systemCacheEquivalentKB * 0.1)) { // Optimal is much smaller than system memory
-              archAlignmentAdvice = `<span class="success">Good Alignment:</span> Your algorithm's data blocks fit very well within system memory/cache.`;
+      // Improved Architectural Alignment calculation and feedback
+      if (typeof optimalDataBlockSizeKB === 'number' && optimalDataBlockSizeKB >= 0 && systemCacheEquivalentKB) {
+          if (optimalDataBlockSizeKB === 0) { // Case for algorithms that don't specify block size or have very minimal data
+              archAlignmentAdvice = `<span class="success">Good Alignment:</span> Algorithm has minimal data block needs or is not sensitive to block size.`;
+
+              archAlignmentFactor = 1.0;
+          } else if (optimalDataBlockSizeKB < (systemCacheEquivalentKB * 0.1)) {
+              archAlignmentAdvice = `<span class="success">Excellent Alignment:</span> Your algorithm's data blocks (${optimalDataBlockSizeKB.toFixed(0)}KB) fit perfectly within system memory/cache (${systemCacheEquivalentKB}KB).`;
               archAlignmentFactor = 1.05; // Small bonus for excellent fit
           } else if (optimalDataBlockSizeKB > systemCacheEquivalentKB) {
-              archAlignmentAdvice = `<span class="warning">Low Alignment:</span> Your algorithm's data block needs (${optimalDataBlockSizeKB.toFixed(0)}KB) exceed system memory (${systemCacheEquivalentKB}KB). Significant performance loss due to cache misses.`;
-              archAlignmentFactor = clamp(systemCacheEquivalentKB / optimalDataBlockSizeKB, 0.5, 1.0); // Penalty
+              archAlignmentAdvice = `<span class="warning">Low Alignment:</span> Your algorithm's data block needs (${optimalDataBlockSizeKB.toFixed(0)}KB) exceed available memory (${systemCacheEquivalentKB}KB). Significant performance loss due to cache misses.`;
+              archAlignmentFactor = clamp(systemCacheEquivalentKB / optimalDataBlockSizeKB, 0.2, 1.0); // More severe penalty
           } else {
               archAlignmentAdvice = `<span class="success">Good Alignment:</span> Your algorithm's data blocks (${optimalDataBlockSizeKB.toFixed(0)}KB) align well with system memory (${systemCacheEquivalentKB}KB).`;
+              archAlignmentFactor = 1.0;
           }
+      } else {
+          archAlignmentAdvice = `<span class="help">Alignment data unavailable:</span> No specific optimal block size hint from algorithm.`;
+
+          archAlignmentFactor = 1.0; // Neutral if no hint
       }
 
 
-      // R1: Theoretical Peak Performance (Hardware Potential, before throttling & architectural alignment)
       let r1_theoGF = (
         cfg.numPerf * PERF_GFLOPS_PER_GHZ * cfg.clkPerf +
         cfg.numEff  * EFF_GFLOPS_PER_GHZ * cfg.clkEff +
@@ -1729,39 +1578,36 @@ async function runArchitecture(layers, N){
       r1_theoTOPS *= qm.tops;
       r1_theoGF *= qm.gflops;
 
-      // Apply workload profile to power and performance
       let perfMultiplier = 1.0;
       let powerMultiplier = 1.0;
-      let basePowerAdjustment = 0; // Additional base power for specific workloads
+      let basePowerAdjustment = 0;
 
       switch (cfg.workloadProfile) {
           case 'gaming':
-              perfMultiplier = 1.0; // High CPU/GPU use
+              perfMultiplier = 1.0;
               powerMultiplier = 1.8;
-              basePowerAdjustment = 2.0; // Higher idle power for gaming
+              basePowerAdjustment = 2.0;
               break;
           case 'videoEditing':
-              perfMultiplier = 1.1; // Favors CPU/Hyper cores
+              perfMultiplier = 1.1;
               powerMultiplier = 1.5;
               basePowerAdjustment = 1.5;
               break;
           case 'socialMedia':
-              perfMultiplier = 0.5; // Low power use
+              perfMultiplier = 0.5;
               powerMultiplier = 0.6;
               basePowerAdjustment = 0.5;
               break;
           case 'idle':
-              perfMultiplier = 0.1; // Minimal use
+              perfMultiplier = 0.1;
               powerMultiplier = 0.1;
               basePowerAdjustment = 0.2;
               break;
           case 'mixed':
           default:
-              // Default values
               break;
       }
 
-      // Initial Peak Power Calculation (before DVFS and throttling) - using specific clocks
       let peakW = (
         cfg.numPerf * POW_PERF_W * (cfg.clkPerf / 3.0) +
         cfg.numEff  * POW_EFF_W * (cfg.clkEff / 2.0) +
@@ -1771,15 +1617,12 @@ async function runArchitecture(layers, N){
       );
       peakW = (peakW * powF + BASE_PEAK_W) * powerMultiplier + basePowerAdjustment;
 
-
       let tPre = estimateThermals(peakW, cfg.coolingW, cfg.nodeNm);
 
       const dvfsCapEl = $('dvfsCap');
-      const dvfsCap = dvfsCapEl ? parseFloat(dvfsCapEl.value) : 4200; // Safe access
-      // Pass individual clocks to DVFS function
+      const dvfsCap = dvfsCapEl ? parseFloat(dvfsCapEl.value) : 4200;
       const dvfsApplied = applyDVFS(cfg, dvfsCap, tPre, cfg.disableThrottling);
 
-      // Re-calculate theoretical GFLOPS/TOPS with DVFS applied (using specific clocks)
       let r1_theoGF_postDVFS = (
         cfg.numPerf * PERF_GFLOPS_PER_GHZ * dvfsApplied.perfGHz +
         cfg.numEff  * EFF_GFLOPS_PER_GHZ * dvfsApplied.effGHz +
@@ -1791,40 +1634,45 @@ async function runArchitecture(layers, N){
       r1_theoTOPS_postDVFS *= qm.tops;
       r1_theoGF_postDVFS *= qm.gflops;
 
-
       const thr = throttleFactor(tPre, cfg.disableThrottling);
 
-      // R2: Effective Performance (Actual Performance, post algorithm efficiency, throttling & architectural alignment)
-      let effGF = r1_theoGF_postDVFS * algEff * thr * perfMultiplier * archAlignmentFactor;
-      let effTOPS = r1_theoTOPS_postDVFS * algEff * thr * perfMultiplier * archAlignmentFactor;
-      let effGPU = r1_theoGPU_postDVFS * algEff * thr * perfMultiplier * archAlignmentFactor;
+      // --- New: Incorporate algorithm runtime (r0_ms) into performance ---
+      const BASELINE_ALGORITHM_MS = 100; // A heuristic baseline for "good" algorithm runtime
+      const runtimePerformanceFactor = clamp(BASELINE_ALGORITHM_MS / r0_ms, 0.1, 2.0); // Reward faster, penalize slower
+      let runtimeImpactMessage = '';
+      if (runtimePerformanceFactor > 1.1) {
+          runtimeImpactMessage = `<span class="success">Excellent Algorithm Speed:</span> Your algorithm executes very fast, boosting overall performance.`;
+      } else if (runtimePerformanceFactor < 0.9) {
+          runtimeImpactMessage = `<span class="warning">Slower Algorithm Speed:</span> Your algorithm's runtime is affecting overall performance. Consider optimizing it.`;
+      } else {
+          runtimeImpactMessage = `Algorithm runtime has a neutral impact on overall performance.`;
+      }
 
-      // NEW: Dynamic Algorithm Power Effect (combines penalties for inefficiency and bonuses for high efficiency)
-      let dynamicAlgorithmPowerEffect = 0;
-
-      // Penalties for sub-optimal algorithm efficiency and architectural alignment
-      dynamicAlgorithmPowerEffect += (1.0 - algEff) * 5.0; // More power consumed if algorithm is inefficient
-      dynamicAlgorithmPowerEffect += (1.0 - archAlignmentFactor) * 7.0; // More power consumed if memory alignment is poor
-
-      // Introduce a "power saving" when efficiency is extremely high
-      const PERFECT_EFFICIENCY_BASE_COST = 2.5; // Base power cost for processing even with perfect efficiency
-                                                // This is subtracted to allow 'negative' penalty (power saving)
-      dynamicAlgorithmPowerEffect -= PERFECT_EFFICIENCY_BASE_COST;
-
-      // Clamp the final effect to ensure it's within realistic bounds for a phone chip
-      dynamicAlgorithmPowerEffect = clamp(dynamicAlgorithmPowerEffect, -2.5, 10.0); // Max saving 2.5W, max penalty 10W
+      let effGF = r1_theoGF_postDVFS * algEff * thr * perfMultiplier * archAlignmentFactor * runtimePerformanceFactor;
+      let effTOPS = r1_theoTOPS_postDVFS * algEff * thr * perfMultiplier * archAlignmentFactor * runtimePerformanceFactor;
+      let effGPU = r1_theoGPU_postDVFS * algEff * thr * perfMultiplier * archAlignmentFactor * runtimePerformanceFactor;
+      // --- End New: Incorporate algorithm runtime ---
 
 
-      // Recalculate peak power after DVFS and throttling effects (using specific clocks)
-      // Now includes dynamicAlgorithmPowerEffect
-      let peakW_post = (
+      // --- New, more realistic power calculation based on efficiency penalties ---
+      // Inefficient algorithms and poor memory alignment increase power draw due to wasted work and data movement.
+      // We model this as a penalty factor on the dynamic (core-related) power consumption.
+      const powerPenaltyFactor = (1 + (1 - algEff) * 0.5 + (1 - archAlignmentFactor) * 1.5);
+
+      let dynamic_power = (
         cfg.numPerf * POW_PERF_W * (dvfsApplied.perfGHz / cfg.clkPerf) +
         cfg.numEff  * POW_EFF_W  * (dvfsApplied.effGHz / cfg.clkEff) +
         cfg.numHyper* POW_HYPER_W* (dvfsApplied.hyperGHz / cfg.clkHyper) +
         cfg.numAI  * POW_AI_W * (dvfsApplied.npuGHz / cfg.clkNPU) +
         cfg.numGPU * POW_GPU_W_PER_GHZ * cfg.clkGPU
       );
-      peakW_post = (peakW_post * powF + BASE_PEAK_W + dynamicAlgorithmPowerEffect) * powerMultiplier * thr + basePowerAdjustment;
+
+      // Apply the penalty factor to the dynamic power component
+      dynamic_power *= powerPenaltyFactor;
+
+      // The final power is the sum of penalized dynamic power and base power, adjusted for other factors.
+      let peakW_post = (dynamic_power * powF + BASE_PEAK_W) * powerMultiplier * thr + basePowerAdjustment;
+      // --- End of new power calculation ---
 
       let tPost = estimateThermals(peakW_post, cfg.coolingW, cfg.nodeNm);
 
@@ -1869,11 +1717,10 @@ async function runArchitecture(layers, N){
       if(cfg.numHyper > 0) specialization.push('Includes Hyper cores (specialized compute accelerators)');
       if(specialization.length === 0) specialization.push('Balanced design');
 
-
       let thermalWarning = '';
       if(tPost >= 120) {
         thermalWarning = '<span class="warning">DANGER:</span> Device will overheat severely and likely be damaged!';
-        document.body.classList.add('thermal-critical'); // Visual effect for critical temp
+        document.body.classList.add('thermal-critical');
       }
       else if(tPost >= 100)
         thermalWarning = '<span class="warning">CRITICAL:</span> Device will likely shut down under heavy load due to extreme heat.';
@@ -1904,10 +1751,10 @@ async function runArchitecture(layers, N){
       if(cfg.clkHyper > 4) riskScore += 1.5;
       if(cfg.clkNPU > 3) riskScore += 1.5;
       if(cfg.clkGPU > 2.5) riskScore += 1.5;
-      if(cfg.numPerf + cfg.numEff + cfg.numAI + cfg.numHyper + cfg.numGPU > 256) riskScore += 3; // Total cores
+      if(cfg.numPerf + cfg.numEff + cfg.numAI + cfg.numHyper + cfg.numGPU > 256) riskScore += 3;
       if(cfg.battmAh > 10000) riskScore += 1;
       if(cfg.coolingW < 2) riskScore += 2;
-      if (cfg.disableThrottling && tPost > 100) riskScore += 3; // High risk if throttling disabled at high temp
+      if (cfg.disableThrottling && tPost > 100) riskScore += 3;
 
       if(riskScore >= 4)
         errorRisk = '<span class="warning">High risk of unrealistic or unstable simulation results due to extreme specs.</span>';
@@ -1920,21 +1767,21 @@ async function runArchitecture(layers, N){
       else if(bench > 800000) verdict = 'Upper mid-range device.';
       else if(bench < 350000) verdict = 'Entry-level / budget profile.';
 
-      const tempPercent = clamp((tPost - 30) / 90, 0, 1) * 100; // Scale temp bar to 150C max
+      const tempPercent = clamp((tPost - 30) / 90, 0, 1) * 100;
       const throttlePercent = (1 - thr) * 100;
       const tempBarEl = $('tempBar');
       const throttleBarEl = $('throttleBar');
       if (tempBarEl) tempBarEl.style.width = tempPercent + '%';
       if (throttleBarEl) throttleBarEl.style.width = throttlePercent + '%';
 
-      setText('k_time', fmt(r0_ms, 2) + ' ms'); // R0
-      setText('k_gflops', fmt(effGF, 2)); // R2
-      setText('k_tops', fmt(effTOPS, 2)); // R2
-      setText('k_gpu', fmt(effGPU, 2)); // R2
+      setText('k_time', fmt(r0_ms, 2) + ' ms');
+      setText('k_gflops', fmt(effGF, 2));
+      setText('k_tops', fmt(effTOPS, 2));
+      setText('k_gpu', fmt(effGPU, 2));
       setText('k_power', fmt(peakW_post, 2));
       setText('k_temp', fmt(tPost, 1) + ' °C');
       setText('k_throttle', fmt(throttlePercent, 1) + '%');
-      setText('k_bench', bench.toLocaleString()); // R2
+      setText('k_bench', bench.toLocaleString());
       setText('k_batt', hMixed.toFixed(1) + ' h');
 
       const memStatus = peakMB <= (cfg.sysMem * 0.9) ? '<span class="success">Memory OK</span>' : '<span class="warning">Memory exceeded/tight!</span>';
@@ -1976,10 +1823,10 @@ async function runArchitecture(layers, N){
           <div class="small mt-2">${flopAdvice}</div>
           <div class="small mt-2">${thermalWarning}</div>
           <div class="small mt-2">${errorRisk}</div>
+          <div class="small mt-2">${runtimeImpactMessage}</div>
         `;
       }
 
-      // Update Chip Price Estimate
       const totalPrice = calculatePrice(cfg);
       const pEstimateEl = $('p_estimate');
       if (pEstimateEl) {
@@ -1996,19 +1843,16 @@ async function runArchitecture(layers, N){
       const ppwHeavy = safep(bench / pHeavy);
       lastChartData = [ppwLight, ppwMixed, ppwHeavy];
       
-      // Update chart data and redraw
       if (ppwChart) {
           ppwChart.data.datasets[0].data = lastChartData;
           ppwChart.options.scales.y.type = chartIsLog ? 'logarithmic' : 'linear';
           ppwChart.update();
       }
       
-      // Update chart descriptions
       const chartDescriptionsEl = $('chartDescriptions');
       if (chartDescriptionsEl) {
           chartDescriptionsEl.innerHTML = evaluateChartData(lastChartData).map(desc => `<p>${desc}</p>`).join('');
       }
-
 
     } catch(e) {
       await showCustomAlert('Simulation error: ' + e.message, 'Simulation Error');
@@ -2019,9 +1863,7 @@ async function runArchitecture(layers, N){
     }
   }
 
-  // UI event listeners and initial setup now correctly within the IIFE and window.onload
   window.addEventListener('load', () => {
-    // Initial UI setup calls, ensuring elements are available
     const dvfsCapEl = $('dvfsCap');
     const dvfsValEl = $('dvfsVal');
     if (dvfsCapEl && dvfsValEl) {
@@ -2038,13 +1880,12 @@ async function runArchitecture(layers, N){
       });
     }
 
-    // Set initial code and render saved list
-    setDefaultCode();
+    // Set initial algorithm JSON
+    setAlgorithmJson(DEFAULT_ALGORITHM_JSON);
     renderSavedList();
-    applyConfigToUI(DEFAULT); // Apply default config to UI inputs
-    initChart(); // Initialize chart once on load
+    applyConfigToUI(DEFAULT);
+    initChart();
 
-    // UI event listeners for buttons and other interactive elements
     const btnRunEl = $('btnRun');
     if (btnRunEl) btnRunEl.onclick = runSimulation;
 
@@ -2062,10 +1903,7 @@ async function runArchitecture(layers, N){
     const btnToggleChartModeEl = $('btnToggleChartMode');
     if (btnToggleChartModeEl) btnToggleChartModeEl.onclick = () => {
       chartIsLog = !chartIsLog;
-      initChart(); // Re-initialize chart with new scale type, destroys old one
-      // The initChart call will draw the chart with the current lastChartData,
-      // so no separate update call is strictly needed right after initChart here.
-      // But adding it for safety/consistency if initChart logic changes.
+      initChart();
       if(ppwChart){
         ppwChart.data.datasets[0].data = lastChartData;
         ppwChart.update();
@@ -2089,8 +1927,8 @@ async function runArchitecture(layers, N){
           if(ok){ showCustomAlert('Saved as '+name, 'Success'); const chipTagEl = $('chipTag'); if (chipTagEl) chipTagEl.innerText = name; renderSavedList(); }
           else showCustomAlert('Save failed (storage?).', 'Error');
         },
-        () => {}, // Cancel callback
-        true // Expect input
+        () => {},
+        true
       );
     };
     const btnListSaveEl = $('btnListSave');
@@ -2119,8 +1957,8 @@ async function runArchitecture(layers, N){
           if(!cfg) return await showCustomAlert('Chip "' + name + '" not found.', 'Error');
           compareWithCurrent(cfg, name);
         },
-        () => {}, // Cancel callback
-        true // Expect input
+        () => {},
+        true
       );
     };
     const btnPresetEl = $('btnPreset');
@@ -2129,17 +1967,17 @@ async function runArchitecture(layers, N){
         (sel) => {
           if(!sel) return;
           if(sel==='mid') {
-            applyConfigToUI({numPerf:2,numEff:6,numAI:1,numHyper:0,numGPU:4,clkPerf:2.7,clkEff:1.8,clkHyper:2.2,clkNPU:1.2,clkGPU:1.0,nodeNm:6,battmAh:5000,sysMem:6144,matN:192,layers:5,coolingW:5.5,dvfsCapMHz:3600,quantMode:'fp16',weightFormat:'fp16',disableThrottling:false,workloadProfile:'mixed'});
+            applyConfigToUI({numPerf:2,numEff:6,numAI:1,numHyper:0,numGPU:4,clkPerf:2.7,clkEff:1.8,clkHyper:2.2,clkNPU:1.2,clkGPU:1.0,nodeNm:6,battmAh:5000,sysMem:6144,matN:192,layers:5,coolingW:5.5,dvfsCapMHz:3600,quantMode:'fp16',weightFormat:'fp16',disableThrottling:false,workloadProfile:'mixed', algorithmJson: DEFAULT_ALGORITHM_JSON});
           } else if(sel==='flag') {
-            applyConfigToUI({numPerf:4,numEff:4,numAI:2,numHyper:1,numGPU:12,clkPerf:3.1,clkEff:2.0,clkHyper:2.5,clkNPU:1.5,clkGPU:1.8,nodeNm:4,battmAh:5000,sysMem:8192,matN:256,layers:6,coolingW:7.5,dvfsCapMHz:4200,quantMode:'fp16',weightFormat:'fp16',disableThrottling:false,workloadProfile:'mixed'});
+            applyConfigToUI({numPerf:4,numEff:4,numAI:2,numHyper:1,numGPU:12,clkPerf:3.1,clkEff:2.0,clkHyper:2.5,clkNPU:1.5,clkGPU:1.8,nodeNm:4,battmAh:5000,sysMem:8192,matN:256,layers:6,coolingW:7.5,dvfsCapMHz:4200,quantMode:'fp16',weightFormat:'fp16',disableThrottling:false,workloadProfile:'mixed', algorithmJson: BLOCKED_ALGORITHM_JSON});
           } else if(sel==='ultra') {
-            applyConfigToUI({numPerf:6,numEff:2,numAI:3,numHyper:1,numGPU:16,clkPerf:3.4,clkEff:2.2,clkHyper:2.8,clkNPU:1.7,clkGPU:2.2,nodeNm:3,battmAh:6000,sysMem:12288,matN:320,layers:7,coolingW:9.0,dvfsCapMHz:4400,quantMode:'int8',weightFormat:'fp16',disableThrottling:false,workloadProfile:'mixed'});
+            applyConfigToUI({numPerf:6,numEff:2,numAI:3,numHyper:1,numGPU:16,clkPerf:3.4,clkEff:2.2,clkHyper:2.8,clkNPU:1.7,clkGPU:2.2,nodeNm:3,battmAh:6000,sysMem:12288,matN:320,layers:7,coolingW:9.0,dvfsCapMHz:4400,quantMode:'int8',weightFormat:'fp16',disableThrottling:false,workloadProfile:'mixed', algorithmJson: BATTERY_OPTIMIZED_ALGORITHM_JSON});
           } else {
             showCustomAlert('Unknown preset. Type mid, flag, or ultra.', 'Invalid Preset');
           }
         },
-        () => {}, // Cancel callback
-        true // Expect input
+        () => {},
+        true
       );
     };
     const btnResetEl = $('btnReset');
@@ -2148,8 +1986,8 @@ async function runArchitecture(layers, N){
     const btnQuickHelpEl = $('btnQuickHelp');
     if (btnQuickHelpEl) btnQuickHelpEl.onclick = () => showCustomAlert(
       `Quick Help:
-- Edit your math code in the 'Editable Math Architecture' box.
-- Press Run Simulation to measure the code's runtime and get realistic metrics.
+- Define your algorithm as JSON in the 'Editable Math Architecture' box.
+- Press Run Simulation to measure the chip's runtime and get realistic metrics.
 - Use quantization and weight format to affect AI throughput and memory.
 - DVFS slider limits peak clock frequency; thermal pressure will reduce clocks further.
 - Save/Load allows sharing and comparison via localStorage or JSON export.
@@ -2160,25 +1998,33 @@ async function runArchitecture(layers, N){
 
     const btnCostOptimizeEl = $('btnCostOptimize');
     if (btnCostOptimizeEl) btnCostOptimizeEl.onclick = async () => {
-      // Placeholder for Cost Optimization Mode logic
       await showCustomAlert(`Cost Optimization Mode (Feature coming soon!):
 This mode would suggest adjustments to your chip (e.g., lower core counts, older process node) to reduce the 'Chip Price Estimate' while trying to stay within a user-defined performance band.`, 'Cost Optimization');
     };
 
-    // --- Code Editor related functions ---
-    const btnDefaultCodeEl = $('btnDefaultCode');
-    if (btnDefaultCodeEl) btnDefaultCodeEl.onclick = setDefaultCode;
-    const btnLoadExampleEl = $('btnLoadExample');
-    if (btnLoadExampleEl) btnLoadExampleEl.onclick = setExampleOptimized;
-    const btnLoadBatteryOptimizedEl = $('btnLoadBatteryOptimized');
-    if (btnLoadBatteryOptimizedEl) btnLoadBatteryOptimizedEl.onclick = setExampleBatteryOptimized;
-    const btnBeautifyEl = $('btnBeautify');
-    if (btnBeautifyEl) btnBeautifyEl.onclick = () => {
-      const codeEditorEl = $('codeEditor');
-      if (codeEditorEl) codeEditorEl.innerText = beautifyCode(codeEditorEl.innerText);
+    // --- Algorithm Editor related functions ---
+    const btnLoadDefaultAlgorithmEl = $('btnLoadDefaultAlgorithm');
+    if (btnLoadDefaultAlgorithmEl) btnLoadDefaultAlgorithmEl.onclick = () => setAlgorithmJson(DEFAULT_ALGORITHM_JSON);
+    
+    const btnLoadBlockedAlgorithmEl = $('btnLoadBlockedAlgorithm');
+    if (btnLoadBlockedAlgorithmEl) btnLoadBlockedAlgorithmEl.onclick = () => setAlgorithmJson(BLOCKED_ALGORITHM_JSON);
+
+    const btnLoadBatteryOptimizedAlgorithmEl = $('btnLoadBatteryOptimizedAlgorithm');
+    if (btnLoadBatteryOptimizedAlgorithmEl) btnLoadBatteryOptimizedAlgorithmEl.onclick = () => setAlgorithmJson(BATTERY_OPTIMIZED_ALGORITHM_JSON);
+    
+    const btnBeautifyAlgorithmEl = $('btnBeautifyAlgorithm');
+    if (btnBeautifyAlgorithmEl) btnBeautifyAlgorithmEl.onclick = () => {
+      const algorithmEditorEl = $('algorithmEditor');
+      if (algorithmEditorEl) algorithmEditorEl.value = beautifyJson(algorithmEditorEl.value);
     };
 
-    // New Tuning Guide Modal Logic
+    // New Tutorial Modal Logic
+    const btnAlgorithmTutorialEl = $('btnAlgorithmTutorial');
+    if (btnAlgorithmTutorialEl) btnAlgorithmTutorialEl.onclick = () => {
+      window.open('algorithm_design_tutorial', '_blank'); // Open the new tutorial in a new tab
+    };
+    
+    // Existing Tuning Guide Modal Logic
     const btnTuningGuideEl = $('btnTuningGuide');
     if (btnTuningGuideEl) btnTuningGuideEl.onclick = () => {
       const tuningGuideModalEl = $('tuningGuideModal');
@@ -2190,7 +2036,6 @@ This mode would suggest adjustments to your chip (e.g., lower core counts, older
       if (tuningGuideModalEl) tuningGuideModalEl.classList.add('hidden');
     };
 
-    // Auto-run simulation on load after a small delay to ensure rendering is complete
     setTimeout(() => {
       runSimulation().catch(e => console.error(e));
     }, 120);
