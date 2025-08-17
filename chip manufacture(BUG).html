@@ -5,118 +5,218 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Prime Edition — Ultimate Fictional Phone Chip Simulator (Deluxe)</title>
 
-<!-- Tailwind CDN -->
+<!-- Tailwind CDN for utility-first CSS styling -->
 <script src="https://cdn.tailwindcss.com"></script>
-<!-- Chart.js CDN -->
+<!-- Chart.js CDN for interactive data visualization -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
 
 <style>
-  /* Small custom polish */
-  :root{
-    --bg:#071129; --panel:#071a2a; --muted:#9fb0c6; --accent:#7c3aed;
+  /* Custom CSS variables for consistent theming */
+  :root {
+    --bg:#071129;
+    --panel:#071a2a;
+    --muted:#9fb0c6;
+    --accent:#7c3aed;
     --glass: rgba(255,255,255,0.03);
   }
-  html,body{height:100%}
-  body{background:linear-gradient(180deg,#031026 0%, #071129 60%);color:#dbeafe;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial}
-  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03); padding:1rem; border-radius:12px}
-  .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace}
-  .small{font-size:.82rem}
-  .tag{background:rgba(255,255,255,0.03);padding:.18rem .5rem;border-radius:6px;border:1px solid rgba(255,255,255,0.02);font-size:.78rem}
-  .code{background:#050914;border-radius:10px;padding:12px;font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:.85rem;line-height:1.45;color:#dbeafe;border:1px solid rgba(255,255,255,0.03);overflow:auto;max-height:360px}
-  .btn{padding:.55rem .85rem;border-radius:.6rem;font-weight:700}
-  .btn-primary{background:linear-gradient(90deg,var(--accent),#4f46e5);color:white}
-  .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--muted)}
-  .kpi{background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:.6rem;border-radius:8px;border:1px solid rgba(255,255,255,0.02)}
-  .help{color:var(--muted);font-size:.85rem}
-  .loadingOverlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg, rgba(2,6,23,0.6), rgba(2,6,23,0.85));z-index:60;backdrop-filter: blur(4px);display:none}
-  .spinner{width:46px;height:46px;border-radius:999px;border:5px solid rgba(255,255,255,0.12);border-top-color:#fff;animation:spin 1s linear infinite}
+  /* Basic body and HTML styling */
+  html,body {height:100%}
+  body {
+    background:linear-gradient(180deg,#031026 0%, #071129 60%);
+    color:#dbeafe;
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+  }
+  /* Styling for card components */
+  .card {
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border:1px solid rgba(255,255,255,0.03);
+    padding:1rem;
+    border-radius:12px;
+  }
+  /* Monospace font for code and data */
+  .mono {font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace}
+  /* Small text size utility */
+  .small {font-size:.82rem}
+  /* Styling for tags */
+  .tag {
+    background:rgba(255,255,255,0.03);
+    padding:.18rem .5rem;
+    border-radius:6px;
+    border:1px solid rgba(255,255,255,0.02);
+    font-size:.78rem;
+  }
+  /* Code block styling */
+  .code {
+    background:#050914;
+    border-radius:10px;
+    padding:12px;
+    font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size:.85rem;
+    line-height:1.45;
+    color:#dbeafe;
+    border:1px solid rgba(255,255,255,0.03);
+    overflow:auto;
+    max-height:360px;
+  }
+  /* Base button styling */
+  .btn {padding:.55rem .85rem;border-radius:.6rem;font-weight:700}
+  /* Primary button styling */
+  .btn-primary {background:linear-gradient(90deg,var(--accent),#4f46e5);color:white}
+  /* Ghost button styling */
+  .btn-ghost {background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--muted)}
+  /* Key Performance Indicator (KPI) styling */
+  .kpi {
+    background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    padding:.6rem;
+    border-radius:8px;
+    border:1px solid rgba(255,255,255,0.02);
+  }
+  /* Help text styling */
+  .help {color:var(--muted);font-size:.85rem}
+  /* Loading overlay styling */
+  .loadingOverlay {
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(180deg, rgba(2,6,23,0.6), rgba(2,6,23,0.85));
+    z-index:60;
+    backdrop-filter: blur(4px);
+    display:none; /* Hidden by default */
+  }
+  /* Spinner animation for loading states */
+  .spinner {
+    width:46px;
+    height:46px;
+    border-radius:999px;
+    border:5px solid rgba(255,255,255,0.12);
+    border-top-color:#fff;
+    animation:spin 1s linear infinite;
+  }
+  /* Keyframe animation for spinner */
   @keyframes spin{to{transform:rotate(360deg)}}
-  .overflow-scroll-y{max-height:520px;overflow:auto;padding-right:8px}
-  .chip-list-item{display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem;border-radius:8px;border:1px solid rgba(255,255,255,0.02);background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00))}
-  .temp-bar{height:8px;border-radius:4px;background:linear-gradient(90deg, #3b82f6, #ef4444);margin-top:4px}
-  .throttle-indicator{height:8px;border-radius:4px;background:linear-gradient(90deg, #10b981, #f59e0b);margin-top:4px}
-  .warning{color:#f59e0b;font-weight:600}
-  .success{color:#10b981;font-weight:600}
-  .input-range{width:100%;margin-top:6px}
-  .core-preview{display:flex;gap:4px;margin-top:8px}
-  .core{width:12px;height:12px;border-radius:50%}
+  /* Scrollable area styling */
+  .overflow-scroll-y {max-height:520px;overflow:auto;padding-right:8px}
+  /* Chip list item styling */
+  .chip-list-item {
+    display:flex;
+    align-items:center;
+    gap:.5rem;
+    padding:.45rem .6rem;
+    border-radius:8px;
+    border:1px solid rgba(255,255,255,0.02);
+    background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+  }
+  /* Temperature bar styling */
+  .temp-bar {
+    height:8px;
+    border-radius:4px;
+    background:linear-gradient(90deg, #3b82f6, #ef4444);
+    margin-top:4px;
+  }
+  /* Throttle indicator bar styling */
+  .throttle-indicator {
+    height:8px;
+    border-radius:4px;
+    background:linear-gradient(90deg, #10b981, #f59e0b);
+    margin-top:4px;
+  }
+  /* Warning text styling */
+  .warning {color:#f59e0b;font-weight:600}
+  /* Success text styling */
+  .success {color:#10b981;font-weight:600}
+  /* Input range slider styling */
+  .input-range {width:100%;margin-top:6px}
+  /* Core preview layout */
+  .core-preview {display:flex;gap:4px;margin-top:8px}
+  /* Individual core styling */
+  .core {width:12px;height:12px;border-radius:50%}
+  /* Specific core colorings */
   .core-perf{background:#7c3aed}
   .core-eff{background:#3b82f6}
   .core-ai{background:#10b981}
   .core-hyper{background:#f59e0b}
+  /* Core label styling */
   .core-label{display:flex;align-items:center;gap:4px;font-size:.75rem}
-  .perf-meter{height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;margin-top:4px}
-  .perf-fill{height:100%;background:linear-gradient(90deg,#7c3aed,#4f46e5)}
+  /* Performance meter bar styling */
+  .perf-meter {
+    height:8px;
+    background:rgba(255,255,255,0.1);
+    border-radius:4px;
+    overflow:hidden;
+    margin-top:4px;
+  }
+  /* Performance fill inside meter */
+  .perf-fill {height:100%;background:linear-gradient(90deg,#7c3aed,#4f46e5)}
+  /* Styling for full-width inputs, selects, and textareas */
   input.w-full,
-select.w-full,
-textarea.w-full {
-  color: #222 !important;
-  background-color: #fff !important;
-  border-color: #ccc !important;
-}
+  select.w-full,
+  textarea.w-full {
+    color: #222 !important;
+    background-color: #fff !important;
+    border-color: #ccc !important;
+  }
 
-/* Custom Modal Styles */
-.custom-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    backdrop-filter: blur(3px);
-}
-.custom-modal-content {
-    background: var(--panel);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 12px;
-    padding: 24px;
-    width: 90%;
-    max-width: 400px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-    color: #dbeafe;
-    text-align: left;
-}
-.custom-modal-content h3 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 16px;
-}
-.custom-modal-content p {
-    margin-bottom: 20px;
-    font-size: 0.95rem;
-    line-height: 1.5;
-}
-.custom-modal-content input[type="text"] {
-    width: 100%;
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid rgba(255,255,255,0.1);
-    background-color: rgba(255,255,255,0.05);
-    color: #dbeafe;
-    margin-bottom: 20px;
-}
-.custom-modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-}
-.custom-modal-actions .btn {
-    padding: 8px 18px;
-}
+  /* Custom Modal Styles for pop-up dialogs */
+  .custom-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      backdrop-filter: blur(3px);
+  }
+  .custom-modal-content {
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 24px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      color: #dbeafe;
+      text-align: left;
+  }
+  .custom-modal-content h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+  }
+  .custom-modal-content p {
+      margin-bottom: 20px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+  }
+  .custom-modal-content input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background-color: rgba(255,255,255,0.05);
+      color: #dbeafe;
+      margin-bottom: 20px;
+  }
+  .custom-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+  }
+  .custom-modal-actions .btn {
+      padding: 8px 18px;
+  }
 
-/* Thermal Runaway Effect */
-.thermal-critical {
-    animation: criticalPulse 1s infinite alternate;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-.thermal-critical {
-    animation: criticalPulse 1s infinite alternate;
-}
-@keyframes criticalPulse {
-    from { background-color: #031026; }
-    to { background-color: #4b0000; } /* Dark red */
-}
+  /* Thermal Runaway Effect (visual warning for critical temperatures) */
+  .thermal-critical {
+      animation: criticalPulse 1s infinite alternate;
+  }
+  /* Keyframe animation for thermal critical state */
+  @keyframes criticalPulse {
+      from { background-color: #031026; }
+      to { background-color: #4b0000; } /* Dark red */
+  }
 </style>
 </head>
 <body>
@@ -128,14 +228,14 @@ textarea.w-full {
     </div>
     <div class="flex items-center gap-3">
       <button id="btnQuickHelp" class="btn btn-ghost small">Quick Help</button>
-      <button id="btnTuningGuide" class="btn btn-ghost small">Tuning Guide</button> <!-- Existing Tuning Guide -->
-      <button id="btnAlgorithmTutorial" class="btn btn-ghost small">Algorithm Tutorial</button> <!-- New Button for Algorithm Tutorial -->
+      <button id="btnTuningGuide" class="btn btn-ghost small">Tuning Guide</button>
+      <button id="btnAlgorithmTutorial" class="btn btn-ghost small">Algorithm Tutorial</button>
       <button id="btnAbout" class="btn btn-ghost small">About</button>
     </div>
   </header>
 
   <main class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-    <!-- left: Controls -->
+    <!-- Left Column: Controls and Algorithm Editor -->
     <section class="col-span-2 space-y-4">
       <div class="card">
         <div class="flex items-center justify-between mb-3">
@@ -194,6 +294,18 @@ textarea.w-full {
             <input id="clkNPU" type="number" step="0.05" class="w-full" min="0.3" value="1.4" />
           </div>
           <div>
+            <label class="small">Shader Units</label>
+            <input id="numShaders" type="number" class="w-full" min="0" value="192" />
+          </div>
+          <div>
+            <label class="small">Shader Complexity</label>
+            <select id="shaderComplexity" class="w-full">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          <div>
             <label class="small">Process Node (nm)</label>
             <input id="nodeNm" type="number" class="w-full" min="3" max="10" step="1" value="4" />
             <div class="perf-meter">
@@ -211,6 +323,11 @@ textarea.w-full {
           <div>
             <label class="small">Cooling Budget (W)</label>
             <input id="coolingW" type="number" class="w-full" min="1.5" step="0.1" value="7.5" />
+          </div>
+          <div class="mt-4">
+            <label for="thermalLimit" class="small">Thermal Limit (°C)</label>
+            <input id="thermalLimit" type="number" class="w-full" min="60" max="120" placeholder="Leave blank for auto" />
+            <div class="small help">Chip will throttle above this temperature</div>
           </div>
           <div>
             <label class="small">DVFS Cap (MHz max)</label>
@@ -373,7 +490,7 @@ textarea.w-full {
 
     </section>
 
-    <!-- Right column: results & saved chips -->
+    <!-- Right Column: Results & Saved Chips -->
     <aside class="space-y-4">
       <div class="card">
         <h3 class="font-semibold mb-2">Live KPIs</h3>
@@ -441,7 +558,7 @@ textarea.w-full {
           </div>
         </div>
         <div id="savedList" class="overflow-scroll-y" style="max-height:340px">
-          <!-- Populated dynamically -->
+          <!-- Populated dynamically by JavaScript -->
         </div>
       </div>
 
@@ -455,7 +572,7 @@ textarea.w-full {
   <footer class="mt-6 small help text-center">Made for creative chip design & play. Not an actual hardware simulator — abstractions are tuned to be believable and fun.</footer>
 </div>
 
-<!-- Loading overlay -->
+<!-- Loading overlay for long simulations -->
 <div id="loadingOverlay" class="loadingOverlay">
   <div class="flex flex-col items-center gap-4">
     <div class="spinner"></div>
@@ -464,7 +581,7 @@ textarea.w-full {
   </div>
 </div>
 
-<!-- Custom Modal HTML Structure -->
+<!-- Custom Modal HTML Structure for alerts and confirms -->
 <div id="customModalOverlay" class="custom-modal-overlay hidden">
   <div class="custom-modal-content">
     <h3 id="customModalTitle"></h3>
@@ -477,7 +594,7 @@ textarea.w-full {
   </div>
 </div>
 
-<!-- Existing Tuning Guide Modal (No changes here, linking for completeness) -->
+<!-- Existing Tuning Guide Modal -->
 <div id="tuningGuideModal" class="custom-modal-overlay hidden">
   <div class="custom-modal-content max-w-xl overflow-y-auto max-h-[90vh]">
     <h3 class="text-xl font-bold mb-4">Chip Tuning 101: Boost Your Phone's Brain! 🧠</h3>
@@ -559,7 +676,7 @@ textarea.w-full {
 
 <script>
 (function(){
-  // Enhanced $ function for robustness and debugging
+  // Helper function to get an element by ID, with a warning if not found.
   const $ = id => {
     const element = document.getElementById(id);
     if (!element) {
@@ -569,6 +686,12 @@ textarea.w-full {
   };
 
   // --- Custom Modal Functions ---
+  /**
+   * Displays a custom alert dialog.
+   * @param {string} message - The message to display.
+   * @param {string} [title='Notification'] - The title of the dialog.
+   * @returns {Promise<void>} A promise that resolves when the user clicks OK.
+   */
   function showCustomAlert(message, title = 'Notification') {
       return new Promise((resolve) => {
           const customModalTitle = $('customModalTitle');
@@ -594,6 +717,15 @@ textarea.w-full {
       });
   }
 
+  /**
+   * Displays a custom confirmation dialog, optionally with an input field.
+   * @param {string} message - The message to display.
+   * @param {string} [title='Confirm'] - The title of the dialog.
+   * @param {Function} [onConfirm] - Callback function for confirmation. Receives input value if `inputValue` is true.
+   * @param {Function} [onCancel] - Callback function for cancellation.
+   * @param {boolean} [inputValue=false] - Whether to show an input field.
+   * @returns {Promise<boolean>} A promise that resolves to true if confirmed, false if cancelled.
+   */
   function showCustomConfirm(message, title = 'Confirm', onConfirm, onCancel, inputValue = false) {
       return new Promise((resolve) => {
           const customModalTitle = $('customModalTitle');
@@ -643,6 +775,14 @@ textarea.w-full {
 
   // --- Algorithm Core Functions (Internal, Hardcoded Implementations) ---
   // These functions are called by runArchitecture based on the JSON configuration.
+
+  /**
+   * Creates a square matrix filled with a fixed value.
+   * @param {number} rows - Number of rows.
+   * @param {number} cols - Number of columns.
+   * @param {object} metrics - Object to track simulation metrics.
+   * @returns {Float64Array[]} The created matrix.
+   */
   function createMatrix(rows, cols, metrics){
     const A = new Array(rows);
     for(let i=0;i<rows;i++){
@@ -654,7 +794,14 @@ textarea.w-full {
     return A;
   }
 
-  // Naive matrix multiplication
+  /**
+   * Performs naive matrix multiplication.
+   * @param {Float64Array[]} A - First matrix.
+   * @param {Float64Array[]} B - Second matrix.
+   * @param {object} metrics - Object to track simulation metrics.
+   * @returns {Float64Array[]} Resultant matrix.
+   * @throws {Error} If matrix dimensions are incompatible.
+   */
   function multiplyMatricesNaive(A,B, metrics){
     const M = A.length, K = A[0].length, N = B[0].length;
     if(B.length !== K) throw new Error("Matrix dimension mismatch in naive multiplication");
@@ -675,7 +822,15 @@ textarea.w-full {
     return C;
   }
 
-  // Blocked matrix multiplication (cache-friendly)
+  /**
+   * Performs blocked matrix multiplication (cache-friendly).
+   * @param {Float64Array[]} A - First matrix.
+   * @param {Float64Array[]} B - Second matrix.
+   * @param {object} metrics - Object to track simulation metrics.
+   * @param {number} [blockSize=32] - Size of blocks for multiplication.
+   * @returns {Float64Array[]} Resultant matrix.
+   * @throws {Error} If matrix dimensions are incompatible.
+   */
   function multiplyMatricesBlocked(A,B, metrics, blockSize = 32){
     const M = A.length, K = A[0].length, N = B[0].length;
     if(B.length !== K) throw new Error("Matrix dimension mismatch in blocked multiplication");
@@ -709,7 +864,12 @@ textarea.w-full {
     return C;
   }
 
-  // Relu activation function
+  /**
+   * Applies ReLU activation function to a matrix.
+   * @param {Float64Array[]} M - Input matrix.
+   * @param {object} metrics - Object to track simulation metrics.
+   * @returns {Float64Array[]} Resultant matrix with ReLU applied.
+   */
   function applyActivationRelu(M, metrics){
     const R = M.length, C = M[0].length;
     const O = new Array(R);
@@ -725,7 +885,12 @@ textarea.w-full {
     return O;
   }
 
-  // Sigmoid activation function
+  /**
+   * Applies Sigmoid activation function to a matrix.
+   * @param {Float64Array[]} M - Input matrix.
+   * @param {object} metrics - Object to track simulation metrics.
+   * @returns {Float64Array[]} Resultant matrix with Sigmoid applied.
+   */
   function applyActivationSigmoid(M, metrics){
     const R = M.length, C = M[0].length;
     const O = new Array(R);
@@ -741,7 +906,12 @@ textarea.w-full {
     return O;
   }
   
-  // Tanh activation function
+  /**
+   * Applies Tanh activation function to a matrix.
+   * @param {Float64Array[]} M - Input matrix.
+   * @param {object} metrics - Object to track simulation metrics.
+   * @returns {Float64Array[]} Resultant matrix with Tanh applied.
+   */
   function applyActivationTanh(M, metrics){
     const R = M.length, C = M[0].length;
     const O = new Array(R);
@@ -757,7 +927,14 @@ textarea.w-full {
     return O;
   }
 
-  // Add residual connection
+  /**
+   * Adds a residual connection (matrix addition).
+   * @param {Float64Array[]} A - First matrix.
+   * @param {Float64Array[]} B - Second matrix.
+   * @param {object} metrics - Object to track simulation metrics.
+   * @returns {Float64Array[]} Resultant matrix.
+   * @throws {Error} If matrix dimensions are incompatible.
+   */
   function addResidual(A, B, metrics){
     const R = A.length, C = A[0].length;
     if (R !== B.length || C !== B[0].length) {
@@ -777,7 +954,7 @@ textarea.w-full {
   }
   // --- End Algorithm Core Functions ---
 
-
+  // Predefined JSON strings for different algorithm presets
   const DEFAULT_ALGORITHM_JSON = `{
   "layers": 8,
   "sequence": [
@@ -846,7 +1023,7 @@ textarea.w-full {
   }
 }`;
 
-
+  // Default chip configuration values
   const DEFAULT = {
     numPerf: 3, numEff: 4, numAI: 2, numHyper: 1, numGPU: 8,
     clkPerf: 3.0, clkEff: 2.0, clkHyper: 2.5, clkNPU: 1.4, clkGPU: 1.5,
@@ -854,42 +1031,65 @@ textarea.w-full {
     battmAh: 5000, coolingW: 7.5, matN: 256, layers: 6,
     dvfsCapMHz: 4200, quantMode: 'fp16', weightFormat: 'fp16',
     disableThrottling: false, workloadProfile: 'mixed',
+    thermalLimit: 85, // Default thermal limit added here
     algorithmJson: DEFAULT_ALGORITHM_JSON // Store the default algorithm JSON
   };
 
-  let ppwChart = null;
-  let chartIsLog = false;
-  let lastChartData = [0, 0, 0];
-  const REF_NODE = 7;
+  let ppwChart = null; // Chart.js instance
+  let chartIsLog = false; // Flag for chart y-axis scale
+  let lastChartData = [0, 0, 0]; // Stores the last calculated chart data
+
+  // Constants for chip simulation calculations
+  const REF_NODE = 7; // Reference process node in nm
   const PERF_GFLOPS_PER_GHZ = 65;
   const EFF_GFLOPS_PER_GHZ  = 10;
   const HYPER_GFLOPS_PER_GHZ= 220;
   const AI_TOPS_PER_GHZ = 38;
-  const GPU_TFLOPS_PER_CORE_BASE = 0.002;
-  const POW_PERF_W = 0.32;
+  const GPU_TFLOPS_PER_CORE_BASE = 0.015;
+  const POW_PERF_W = 0.32; // Power consumption per core type
   const POW_EFF_W  = 0.08;
   const POW_HYPER_W= 1.25;
   const POW_AI_W   = 0.26;
   const POW_GPU_W_PER_GHZ = 0.15;
-  const BASE_PEAK_W = 2.2;
-  const CELL_V = 3.85;
+  const POW_SHADER_W_PER_UNIT = 0.005;
+  const BASE_PEAK_W = 2.2; // Base power consumption of the chip
+  const CELL_V = 3.85; // Battery cell voltage
 
+  /** Clamps a value between a minimum and maximum. */
   function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+  /** Converts mAh to Wh. */
   function mAhToWh(mAh){ return (mAh/1000) * CELL_V; }
+  /** Formats a number for display. */
   function fmt(num, digits=2){ if(isNaN(num)) return '--'; return Number(num).toLocaleString(undefined, {maximumFractionDigits: digits}); }
+  /** Calculates performance factor based on process node. */
   function nodePerfFactor(nm){ return Math.pow(REF_NODE / Math.max(3, nm), 0.75); }
+  /** Calculates power factor based on process node. */
   function nodePowerFactor(nm){ return Math.pow(Math.max(3, nm) / REF_NODE, 1.35); }
 
+  /**
+   * Calculates algorithm efficiency based on simulated vs. theoretical FLOPs.
+   * @param {number} simulatedFlops - FLOPs measured during simulation.
+   * @param {number} theoreticalFlops - Ideal theoretical FLOPs.
+   * @returns {number} Efficiency (0.1 to 1.0).
+   */
   function algorithmEfficiency(simulatedFlops, theoreticalFlops){
       if (theoreticalFlops <= 0) return 0;
       const efficiency = clamp(theoreticalFlops / simulatedFlops, 0.1, 1.0);
       return efficiency;
   }
 
-  function estimateThermals(powerW, coolingW, nodeNm) {
+  /**
+   * Estimates chip temperature based on power, cooling, and process node.
+   * @param {number} powerW - Total power consumption in watts.
+   * @param {number} coolingW - Cooling budget in watts.
+   * @param {number} nodeNm - Process node in nm.
+   * @param {number} [shaderPower=0] - Power consumed by shader units.
+   * @returns {number} Estimated temperature in Celsius.
+   */
+  function estimateThermals(powerW, coolingW, nodeNm, shaderPower = 0) {
     const baseTemp = 30 + (nodeNm - 3) * 1.5;
     const effectiveCooling = coolingW * 1.2;
-    const heatGenerated = powerW * 3.5;
+    const heatGenerated = (powerW + shaderPower) * 3.5;
     let temp = baseTemp + (heatGenerated - effectiveCooling);
 
     if (powerW > 15) {
@@ -898,14 +1098,26 @@ textarea.w-full {
     return clamp(temp, 30, 150);
   }
 
-  function throttleFactor(tempC, disableThrottling){
+  /**
+   * Calculates throttle factor based on temperature and an optional limit.
+   * @param {number} tempC - Current temperature in Celsius.
+   * @param {boolean} disableThrottling - If throttling is disabled.
+   * @param {number} [limit=85] - The thermal limit in Celsius above which throttling occurs.
+   * @returns {number} Throttle factor (0.0 to 1.0).
+   */
+  function throttleFactor(tempC, disableThrottling, limit = 85){
     if (disableThrottling) return 1.0;
-    if(tempC <= 70) return 1.0;
-    if(tempC <= 85) return 1 - (tempC - 70)*0.015;
-    if(tempC <= 100) return 1 - (0.15 + (tempC - 85)*0.03);
-    return 1 - (0.15 + 0.45 + (tempC - 100)*0.05);
+    if(tempC <= limit) return 1.0;
+    const excess = tempC - limit;
+    if(excess <= 15) return 1 - excess * 0.03; // 3% reduction per degree for first 15 degrees over limit
+    return 1 - (0.45 + (excess - 15) * 0.05); // Faster reduction after that
   }
 
+  /**
+   * Returns quantization multipliers for TOPS and GFLOPS.
+   * @param {string} mode - Quantization mode (int8, fp16, fp32).
+   * @returns {object} Object with tops and gflops multipliers.
+   */
   function quantMultipliers(mode){
     switch(mode){
       case 'int8': return {tops:1.6, gflops:0.95};
@@ -915,6 +1127,14 @@ textarea.w-full {
     }
   }
 
+  /**
+   * Applies Dynamic Voltage and Frequency Scaling (DVFS) based on temperature and cap.
+   * @param {object} cfg - Current chip configuration.
+   * @param {number} dvfsCapMHz - DVFS clock cap in MHz.
+   * @param {number} tempC - Current temperature in Celsius.
+   * @param {boolean} disableThrottling - If throttling is disabled.
+   * @returns {object} Object with effective core clock speeds in GHz.
+   */
   function applyDVFS(cfg, dvfsCapMHz, tempC, disableThrottling){
     const tempPenalty = disableThrottling ? 1.0 : (tempC > 70 ? (1 - clamp((tempC - 70) / 30, 0, 0.4)) : 1.0);
     let perfMHz = clamp(cfg.clkPerf*1000, 200, dvfsCapMHz)*tempPenalty;
@@ -935,6 +1155,10 @@ textarea.w-full {
     };
   }
 
+  /**
+   * Reads all input values from the UI and returns them as a configuration object.
+   * @returns {object} The current chip configuration.
+   */
   function readInputs() {
     const getElementValue = (id, fallback) => {
         const el = $(id);
@@ -960,12 +1184,15 @@ textarea.w-full {
       clkHyper: clamp(parseFloat(getElementValue('clkHyper', 2.5)), 0.4, 10),
       clkNPU: clamp(parseFloat(getElementValue('clkNPU', 1.4)), 0.2, 10),
       clkGPU: clamp(parseFloat(getElementValue('clkGPU', 1.5)), 0.2, 3.0),
+      numShaders: clamp(parseInt(getElementValue('numShaders', 4)), 0, 512),
+      shaderComplexity: getElementValue('shaderComplexity', 'medium'),
       nodeNm: clamp(parseInt(getElementValue('nodeNm', 4)), 3, 14),
       sysMem: clamp(parseInt(getElementValue('sysMem', 8192)), 128, 262144),
       battmAh: clamp(parseInt(getElementValue('battmAh', 5000)), 300, 20000),
       coolingW: clamp(parseFloat(getElementValue('coolingW', 7.5)), 0.5, 50),
       matN: clamp(parseInt(getElementValue('matN', 256)), 8, 1024),
       layers: clamp(parseInt(getElementValue('layers', 6)), 1, 64),
+      thermalLimit: getElementValue('thermalLimit', NaN), // Read new thermal limit input
       dvfsCapMHz: clamp(parseFloat(getElementValue('dvfsCap', 4200)), 300, 6000),
       quantMode: getElementValue('quantMode', 'fp16'),
       weightFormat: getElementValue('weightFormat', 'fp16'),
@@ -975,6 +1202,10 @@ textarea.w-full {
     };
   }
 
+  /**
+   * Applies a given configuration object to update the UI elements.
+   * @param {object} cfg - The configuration object to apply.
+   */
   function applyConfigToUI(cfg){
     const setValue = (id, val) => {
       const el = $(id);
@@ -1004,6 +1235,15 @@ textarea.w-full {
     setValue('coolingW', cfg.coolingW);
     setValue('matN', cfg.matN);
     setValue('layers', cfg.layers);
+    // Set thermalLimit, but only if it's a valid number. Otherwise, it should remain empty/placeholder.
+    const thermalLimitEl = $('thermalLimit');
+    if (thermalLimitEl) {
+        if (!isNaN(cfg.thermalLimit)) {
+            thermalLimitEl.value = cfg.thermalLimit;
+        } else {
+            thermalLimitEl.value = ''; // Ensure it's cleared if NaN
+        }
+    }
     setValue('dvfsCap', cfg.dvfsCapMHz || 4200);
     setInnerText('dvfsVal', (cfg.dvfsCapMHz || 4200) + ' MHz');
     setValue('quantMode', cfg.quantMode || 'fp16');
@@ -1019,6 +1259,10 @@ textarea.w-full {
     updateNodePerfMeter(cfg.nodeNm);
   }
 
+  /**
+   * Updates the visual performance meter for the process node.
+   * @param {number} nodeNm - Process node in nm.
+   */
   function updateNodePerfMeter(nodeNm) {
     const nodePerfMeter = $('nodePerfMeter');
     if (nodePerfMeter) {
@@ -1027,10 +1271,15 @@ textarea.w-full {
     }
   }
 
+  /**
+   * Compares the current chip configuration with a saved configuration and shows differences.
+   * @param {object} savedCfg - The saved configuration object.
+   * @param {string} name - The name of the saved chip.
+   */
   async function compareWithCurrent(savedCfg, name){
     const cur = readInputs();
     const diffs = [];
-    const keys = ['numPerf','numEff','numAI','numHyper','numGPU','clkPerf','clkEff','clkHyper','clkNPU','clkGPU','nodeNm','battmAh','sysMem','coolingW','matN','layers','dvfsCapMHz','quantMode','weightFormat','disableThrottling','workloadProfile'];
+    const keys = ['numPerf','numEff','numAI','numHyper','numGPU','clkPerf','clkEff','clkHyper','clkNPU','clkGPU','nodeNm','battmAh','sysMem','coolingW','matN','layers','dvfsCapMHz','quantMode','weightFormat','disableThrottling','workloadProfile', 'thermalLimit'];
     for(const k of keys){
       if(savedCfg[k] !== cur[k]) diffs.push(`${k}: saved=${savedCfg[k]} vs current=${cur[k]}`);
     }
@@ -1041,11 +1290,19 @@ textarea.w-full {
     await showCustomAlert('Comparing current with "'+name+'":\n\n' + (diffs.length? diffs.map(d => `- ${d}`).join('\n') : 'No differences found.'), 'Comparison Results');
   }
 
+  /**
+   * Packs the current UI input values into a configuration object.
+   * @returns {object} The current chip configuration.
+   */
   function packConfig(){
     const cfg = readInputs();
     return cfg;
   }
 
+  /**
+   * Sets the content of the algorithm editor textarea.
+   * @param {string} jsonString - The JSON string to set.
+   */
   function setAlgorithmJson(jsonString) {
     const algorithmEditorEl = $('algorithmEditor');
     if (algorithmEditorEl) {
@@ -1053,6 +1310,11 @@ textarea.w-full {
     }
   }
 
+  /**
+   * Beautifies a JSON string by parsing and re-stringifying it with indentation.
+   * @param {string} jsonString - The JSON string to beautify.
+   * @returns {string} The beautified JSON string, or original if invalid.
+   */
   function beautifyJson(jsonString) {
     try {
       const obj = JSON.parse(jsonString);
@@ -1064,6 +1326,12 @@ textarea.w-full {
   }
 
   // --- Local Storage Functions ---
+  /**
+   * Saves a chip configuration to local storage.
+   * @param {string} name - The name of the chip.
+   * @param {object} cfg - The configuration object to save.
+   * @returns {boolean} True if saved successfully, false otherwise.
+   */
   function saveChip(name, cfg) {
     try {
       localStorage.setItem('chip_simulator_' + name, JSON.stringify(cfg));
@@ -1074,6 +1342,11 @@ textarea.w-full {
     }
   }
 
+  /**
+   * Loads a chip configuration from local storage.
+   * @param {string} name - The name of the chip to load.
+   * @returns {object|null} The loaded configuration object, or null if not found/error.
+   */
   function loadChip(name) {
     try {
       const data = localStorage.getItem('chip_simulator_' + name);
@@ -1084,6 +1357,10 @@ textarea.w-full {
     }
   }
 
+  /**
+   * Lists all saved chip names from local storage.
+   * @returns {string[]} An array of saved chip names.
+   */
   function listSavedChips() {
     const names = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -1095,6 +1372,11 @@ textarea.w-full {
     return names;
   }
 
+  /**
+   * Deletes a chip configuration from local storage.
+   * @param {string} name - The name of the chip to delete.
+   * @returns {boolean} True if deleted successfully, false otherwise.
+   */
   function deleteChip(name) {
     try {
       localStorage.removeItem('chip_simulator_' + name);
@@ -1106,6 +1388,9 @@ textarea.w-full {
     }
   }
 
+  /**
+   * Clears all saved chips from local storage after confirmation.
+   */
   async function clearSaved() {
     await showCustomConfirm('Are you sure you want to clear all saved chips? This cannot be undone.', 'Clear All Saved Chips',
       () => {
@@ -1121,6 +1406,7 @@ textarea.w-full {
     );
   }
 
+  /** Renders the list of saved chips in the UI. */
   function renderSavedList() {
     const savedListEl = $('savedList');
     if (!savedListEl) return;
@@ -1171,7 +1457,11 @@ textarea.w-full {
   }
   // --- End Local Storage Functions ---
 
-  // Helper function to set text content of an element
+  /**
+   * Helper function to set the inner text content of an element.
+   * @param {string} id - The ID of the element.
+   * @param {string} value - The text value to set.
+   */
   function setText(id, value) {
     const el = $(id);
     if (el) {
@@ -1179,43 +1469,71 @@ textarea.w-full {
     }
   }
 
+  const shaderComplexityMultiplier = {
+        low: 0.01,
+        medium: 0.02,
+        high: 0.03
+      };
+
+  /**
+   * Calculates an estimated price for the chip based on its configuration.
+   * This is a simplified, fictional pricing model.
+   * @param {object} cfg - The chip configuration.
+   * @returns {number} Estimated price in dollars.
+   */
   function calculatePrice(cfg) {
-    let price = 150;
+    let price = 5; // Base price
 
-    price += cfg.numPerf * 20;
-    price += cfg.numEff * 5;
-    price += cfg.numAI * 35;
-    price += cfg.numHyper * 45;
-    price += cfg.numGPU * 10;
+    const PRICE_SCALING_FACTOR = 0.7;
 
-    price += (cfg.clkPerf - 0.4) * 10 * cfg.numPerf;
-    price += (cfg.clkEff - 0.4) * 5 * cfg.numEff;
-    price += (cfg.clkHyper - 0.4) * 15 * cfg.numHyper;
-    price += (cfg.clkNPU - 0.3) * 12 * cfg.numAI;
-    price += (cfg.clkGPU - 0.5) * 8 * cfg.numGPU;
+    // Core costs
+    price += cfg.numPerf * 0.5;
+    price += cfg.numEff * 0.5;
+    price += cfg.numAI * 0.5;
+    price += cfg.numHyper * 1;
+    price += cfg.numGPU * 1;
 
-    price += Math.pow((7 - cfg.nodeNm), 2) * 20;
+    // Clock speed costs
+    price += (cfg.clkPerf - 0.4) * 0.5 * cfg.numPerf;
+    price += (cfg.clkEff - 0.4) * 0.5 * cfg.numEff;
+    price += (cfg.clkHyper - 0.4) * 0.5 * cfg.numHyper;
+    price += (cfg.clkNPU - 0.3) * 1 * cfg.numAI;
+    price += (cfg.clkGPU - 0.5) * 0.7 * cfg.numGPU;
 
-    price += (cfg.sysMem / 1024) * 2;
+    // Shader costs
+    const complexityFactor = shaderComplexityMultiplier[cfg.shaderComplexity] || 1.0;
+    price += cfg.numShaders * 0.01 * complexityFactor;
 
+    // Process node cost (smaller nodes are exponentially more expensive)
+    price += Math.pow((7 - cfg.nodeNm), 2) * 7;
+
+    // System memory cost
+    price += (cfg.sysMem / 1024) * 1;
+
+    // Cooling budget cost
     price += cfg.coolingW * 5;
 
-    price += (cfg.battmAh / 1000) * 0.5;
+    // Battery capacity cost
+    price += (cfg.battmAh / 1000) * 0;
 
-    if (cfg.quantMode === 'int8') price += 5;
-    if (cfg.quantMode === 'fp32') price += 2;
+    // Quantization mode cost
+    if (cfg.quantMode === 'int8') price += 2;
+    if (cfg.quantMode === 'fp32') price += 1;
 
+    // Algorithm complexity cost (simplified)
     price += (cfg.layers * cfg.matN / 1000) * 0.1;
 
-    return Math.max(100, price);
+    return Math.max(10, price * PRICE_SCALING_FACTOR); // Minimum price
   }
 
+  /** Initializes or updates the Chart.js instance for Performance/Watt chart. */
   function initChart() {
     const ctx = $('ppwChart');
     if (!ctx) return;
 
     const chartType = chartIsLog ? 'logarithmic' : 'linear';
 
+    // Destroy existing chart to prevent memory leaks and re-render with new options
     if (ppwChart) {
       ppwChart.destroy();
     }
@@ -1228,9 +1546,9 @@ textarea.w-full {
           label: 'Composite Score per Watt',
           data: lastChartData,
           backgroundColor: [
-            'rgba(75, 192, 192, 0.6)',
-            'rgba(153, 102, 255, 0.6)',
-            'rgba(255, 159, 64, 0.6)'
+            'rgba(75, 192, 192, 0.6)', // Light Use
+            'rgba(153, 102, 255, 0.6)', // Mixed Use
+            'rgba(255, 159, 64, 0.6)'  // Heavy Use
           ],
           borderColor: [
             'rgba(75, 192, 192, 1)',
@@ -1263,7 +1581,7 @@ textarea.w-full {
         },
         plugins: {
           legend: {
-            display: false,
+            display: false, // Hide legend for single dataset
           },
           tooltip: {
             callbacks: {
@@ -1277,6 +1595,11 @@ textarea.w-full {
     });
   }
 
+  /**
+   * Evaluates chart data and generates descriptive messages.
+   * @param {number[]} values - Array of performance-per-watt values for different workloads.
+   * @returns {string[]} An array of descriptive strings.
+   */
   function evaluateChartData(values) {
     const [light, mixed, heavy] = values;
     const descriptions = [];
@@ -1305,6 +1628,7 @@ textarea.w-full {
       descriptions.push('⚠️ Sub-optimal heavy-use efficiency; consider reviewing cooling or core configuration for demanding applications.');
     }
 
+    // Overall verdicts
     if (Math.max(...values) < 5000) {
         descriptions.push('🚨 Overall very low performance per watt. Chip design may be highly inefficient or underpowered.');
     } else if (Math.min(...values) > 70000) {
@@ -1314,22 +1638,29 @@ textarea.w-full {
     return descriptions;
   }
 
-  // --- New runArchitecture function, driven by JSON config ---
+  // --- Run Architecture Function, driven by JSON config ---
+  /**
+   * Runs the simulated algorithm based on the provided JSON configuration.
+   * This function calculates deterministic metrics rather than real-world timing.
+   * @param {number} layers - Number of neural network layers.
+   * @param {number} N - Matrix size (N x N).
+   * @param {object} algorithmConfig - Parsed JSON object defining the algorithm.
+   * @returns {Promise<object>} An object containing simulation results (ms, flops, iops, peakBytes, architecturalHints).
+   * @throws {Error} If there's an error in the algorithm configuration or execution.
+   */
   async function runArchitectureWithJson(layers, N, algorithmConfig) {
     const metrics = { flops: 0, iops: 0, peakBytes: 0 };
-    let X = createMatrix(N,N, metrics);
+    let X = createMatrix(N,N, metrics); // Initial input matrix
     let currentOptimalBlockSize = 0; // To track if a blocked method is used
 
-    // The actual execution time calculation using performance.now() is removed here
-    // as it introduces non-determinism. We will calculate a deterministic 'ms' value below.
     for(let L=0; L<layers; L++){
-      let Y = X; // For residual connections, Y stores the input before processing
-      // Validate and execute each operation in the sequence
+      let Y = X; // For residual connections, Y stores the input before processing for this layer
+      // Iterate and execute each operation in the sequence
       for (let i = 0; i < algorithmConfig.sequence.length; i++) {
         const op = algorithmConfig.sequence[i];
         try {
           if (op.type === "matrixMultiply") {
-            const W = createMatrix(N, N, metrics);
+            const W = createMatrix(N, N, metrics); // Create a weight matrix for multiplication
             if (op.method === "naive") {
               X = multiplyMatricesNaive(X, W, metrics);
             } else if (op.method === "blocked") {
@@ -1351,7 +1682,8 @@ textarea.w-full {
               throw new Error(`Unknown activation function: '${op.function}'. Supported: 'relu', 'sigmoid', 'tanh'.`);
             }
           } else if (op.type === "conditionalResidual") {
-            if (op.enabled && (typeof op.frequency === 'number' && op.frequency > 0 && L % op.frequency === 0)) {
+            // Apply residual only if enabled and current layer matches frequency
+            if (op.enabled && (typeof op.frequency === 'number' && op.frequency > 0 && (L + 1) % op.frequency === 0)) { // (L+1) for 1-based layer indexing
               X = addResidual(X, Y, metrics); // Add residual connection
             }
           } else {
@@ -1361,7 +1693,8 @@ textarea.w-full {
             throw new Error(`Error in sequence operation ${i} (type: ${op.type || 'N/A'}): ${opErr.message}`);
         }
       }
-      if(L%2===0) await new Promise(r=>setTimeout(r,0)); // Yield to browser
+      // Yield to browser to prevent UI freezing during long calculations
+      if(L % 2 === 0) await new Promise(r=>setTimeout(r,0));
     }
 
     // Determine optimalDataBlockSizeKB based on user hint or inferred value
@@ -1369,6 +1702,7 @@ textarea.w-full {
     if (algorithmConfig.architecturalHints && typeof algorithmConfig.architecturalHints.optimalDataBlockSizeKB === 'number') {
         finalOptimalBlockSizeKB = algorithmConfig.architecturalHints.optimalDataBlockSizeKB;
     } else if (currentOptimalBlockSize > 0) {
+        // If blocked method was used but no explicit hint, infer from the largest block size
         finalOptimalBlockSizeKB = Math.ceil((currentOptimalBlockSize * currentOptimalBlockSize * 8) / 1024);
     } else {
         // Fallback to full matrix size as a hint if no specific block hint and not explicitly set by user
@@ -1392,7 +1726,13 @@ textarea.w-full {
   }
 
   // --- JSON Schema Validation for Algorithm Configuration ---
-  function validateAlgorithmConfig(config, N) { // Pass matrix size N for semantic checks
+  /**
+   * Validates the structure and content of the algorithm JSON configuration.
+   * @param {object} config - The parsed algorithm configuration object.
+   * @param {number} N - The matrix size (N) for semantic checks.
+   * @returns {string[]} An array of error messages. Empty if valid.
+   */
+  function validateAlgorithmConfig(config, N) {
     const errors = [];
 
     if (typeof config.layers !== 'number' || config.layers <= 0) {
@@ -1408,12 +1748,12 @@ textarea.w-full {
         const op = config.sequence[i];
         if (typeof op !== 'object' || op === null) {
           errors.push(`Sequence item ${i}: must be an object.`);
-          continue;
+          continue; // Skip further validation for this op if type is missing
         }
 
         if (typeof op.type !== 'string') {
           errors.push(`Sequence item ${i}: 'type' property is missing or not a string.`);
-          continue; // Skip further validation for this op if type is missing
+          continue;
         }
 
         switch (op.type) {
@@ -1468,17 +1808,21 @@ textarea.w-full {
     return errors;
   }
 
+  /**
+   * Main function to run the chip simulation.
+   * Fetches inputs, performs calculations, updates UI, and handles errors.
+   */
   async function runSimulation(){
     const loadingOverlay = $('loadingOverlay');
     const progressText = $('progressText');
-    if (loadingOverlay) loadingOverlay.style.display = 'flex';
+    if (loadingOverlay) loadingOverlay.style.display = 'flex'; // Show loading overlay
     if (progressText) progressText.innerText = 'Initializing...';
     
-    document.body.classList.remove('thermal-critical');
-    await new Promise(r=>setTimeout(r,20));
+    document.body.classList.remove('thermal-critical'); // Remove thermal warning animation
+    await new Promise(r=>setTimeout(r,20)); // Allow UI to update
 
     try {
-      const cfg = readInputs();
+      const cfg = readInputs(); // Get current configuration from UI
 
       // --- Pre-simulation Hardware Parameter Validation & Warnings ---
       const warnings = [];
@@ -1497,10 +1841,8 @@ textarea.w-full {
 
       if (warnings.length > 0) {
           await showCustomAlert('Hardware Configuration Warnings:\n\n' + warnings.map(w => `- ${w}`).join('\n'), 'Configuration Warning');
-          // Decide if you want to stop simulation here or just warn. For now, we continue.
       }
       // --- End Pre-simulation Hardware Parameter Validation ---
-
 
       let archResult = null;
       let algorithmConfigParsed;
@@ -1519,53 +1861,55 @@ textarea.w-full {
         archResult = await runArchitectureWithJson(cfg.layers, cfg.matN, algorithmConfigParsed);
 
       } catch(err) {
+        // Display algorithm-specific errors
         await showCustomAlert('Algorithm Configuration Error:\n' + (err.message || err), 'Algorithm Error');
         console.error("Detailed Algorithm Error:", err);
-        if (loadingOverlay) loadingOverlay.style.display = 'none';
-        return;
+        if (loadingOverlay) loadingOverlay.style.display = 'none'; // Hide loading overlay on error
+        return; // Stop simulation on algorithm error
       }
 
       if (progressText) progressText.innerText = 'Computing performance metrics...';
-      await new Promise(r=>setTimeout(r,50));
+      await new Promise(r=>setTimeout(r,50)); // Allow UI to update
 
-      const perfF = nodePerfFactor(cfg.nodeNm);
-      const powF = nodePowerFactor(cfg.nodeNm);
+      // Apply process node factors
+      const perfF = nodePerfFactor(cfg.nodeNm); // Performance scaling due to node size
+      const powF = nodePowerFactor(cfg.nodeNm); // Power scaling due to node size
 
-      const r0_ms = archResult.ms; // This is now deterministic from runArchitectureWithJson
+      // R0 Metrics (Raw Algorithm Performance)
+      const r0_ms = archResult.ms;
       const r0_flops = archResult.flops;
       const r0_peakBytes = archResult.peakBytes;
 
-      const theoreticalMathFlopsIdeal = cfg.layers * 2 * Math.pow(cfg.matN, 3);
+      // Algorithm Efficiency calculation
+      const theoreticalMathFlopsIdeal = cfg.layers * 2 * Math.pow(cfg.matN, 3); // Simplified theoretical max FLOPs
       const algEff = algorithmEfficiency(r0_flops, theoreticalMathFlopsIdeal);
 
+      // Architectural Alignment calculation and advice
       let archAlignmentFactor = 1.0;
       let archAlignmentAdvice = '';
       const optimalDataBlockSizeKB = archResult.architecturalHints.optimalDataBlockSizeKB;
-      const systemCacheEquivalentKB = cfg.sysMem; // Simplified, treating all sysMem as cache
+      const systemCacheEquivalentKB = cfg.sysMem; // Simplified, treating all sysMem as cache for this metric
 
-      // Improved Architectural Alignment calculation and feedback
       if (typeof optimalDataBlockSizeKB === 'number' && optimalDataBlockSizeKB >= 0 && systemCacheEquivalentKB) {
-          if (optimalDataBlockSizeKB === 0) { // Case for algorithms that don't specify block size or have very minimal data
+          if (optimalDataBlockSizeKB === 0) {
               archAlignmentAdvice = `<span class="success">Good Alignment:</span> Algorithm has minimal data block needs or is not sensitive to block size.`;
-
               archAlignmentFactor = 1.0;
-          } else if (optimalDataBlockSizeKB < (systemCacheEquivalentKB * 0.1)) {
+          } else if (optimalDataBlockSizeKB < (systemCacheEquivalentKB * 0.1)) { // If block size is very small relative to memory
               archAlignmentAdvice = `<span class="success">Excellent Alignment:</span> Your algorithm's data blocks (${optimalDataBlockSizeKB.toFixed(0)}KB) fit perfectly within system memory/cache (${systemCacheEquivalentKB}KB).`;
               archAlignmentFactor = 1.05; // Small bonus for excellent fit
-          } else if (optimalDataBlockSizeKB > systemCacheEquivalentKB) {
+          } else if (optimalDataBlockSizeKB > systemCacheEquivalentKB) { // If block size exceeds memory
               archAlignmentAdvice = `<span class="warning">Low Alignment:</span> Your algorithm's data block needs (${optimalDataBlockSizeKB.toFixed(0)}KB) exceed available memory (${systemCacheEquivalentKB}KB). Significant performance loss due to cache misses.`;
               archAlignmentFactor = clamp(systemCacheEquivalentKB / optimalDataBlockSizeKB, 0.2, 1.0); // More severe penalty
-          } else {
+          } else { // Good fit
               archAlignmentAdvice = `<span class="success">Good Alignment:</span> Your algorithm's data blocks (${optimalDataBlockSizeKB.toFixed(0)}KB) align well with system memory (${systemCacheEquivalentKB}KB).`;
               archAlignmentFactor = 1.0;
           }
       } else {
           archAlignmentAdvice = `<span class="help">Alignment data unavailable:</span> No specific optimal block size hint from algorithm.`;
-
           archAlignmentFactor = 1.0; // Neutral if no hint
       }
 
-
+      // R1 Metrics (Theoretical Hardware Potential)
       let r1_theoGF = (
         cfg.numPerf * PERF_GFLOPS_PER_GHZ * cfg.clkPerf +
         cfg.numEff  * EFF_GFLOPS_PER_GHZ * cfg.clkEff +
@@ -1574,10 +1918,12 @@ textarea.w-full {
       let r1_theoTOPS = (cfg.numAI * AI_TOPS_PER_GHZ * cfg.clkNPU) * perfF;
       let r1_theoGPU = cfg.numGPU * GPU_TFLOPS_PER_CORE_BASE * cfg.clkGPU * perfF;
 
+      // Apply quantization multipliers
       const qm = quantMultipliers(cfg.quantMode);
       r1_theoTOPS *= qm.tops;
       r1_theoGF *= qm.gflops;
 
+      // Workload profile multipliers for performance and power
       let perfMultiplier = 1.0;
       let powerMultiplier = 1.0;
       let basePowerAdjustment = 0;
@@ -1601,15 +1947,16 @@ textarea.w-full {
           case 'idle':
               perfMultiplier = 0.1;
               powerMultiplier = 0.1;
-              basePowerAdjustment = 0.2;
+              basePowerAdjustment = 0.1;
               break;
           case 'mixed':
           default:
               break;
       }
 
+      // Initial peak power estimation
       let peakW = (
-        cfg.numPerf * POW_PERF_W * (cfg.clkPerf / 3.0) +
+        cfg.numPerf * POW_PERF_W * (cfg.clkPerf / 3.0) + // Scaled by clock relative to default
         cfg.numEff  * POW_EFF_W * (cfg.clkEff / 2.0) +
         cfg.numHyper* POW_HYPER_W * (cfg.clkHyper / 2.5) +
         cfg.numAI  * POW_AI_W * (cfg.clkNPU / 1.5) +
@@ -1617,26 +1964,68 @@ textarea.w-full {
       );
       peakW = (peakW * powF + BASE_PEAK_W) * powerMultiplier + basePowerAdjustment;
 
-      let tPre = estimateThermals(peakW, cfg.coolingW, cfg.nodeNm);
+      // Shader power calculation based on units and complexity
+      let shaderPower = cfg.numShaders * POW_SHADER_W_PER_UNIT * cfg.clkGPU;
+      switch(cfg.shaderComplexity){
+        case 'low': shaderPower *= 0.8; break;
+        case 'medium': shaderPower *= 1.0; break;
+        case 'high': shaderPower *= 1.3; break;
+      }
 
-      const dvfsCapEl = $('dvfsCap');
-      const dvfsCap = dvfsCapEl ? parseFloat(dvfsCapEl.value) : 4200;
-      const dvfsApplied = applyDVFS(cfg, dvfsCap, tPre, cfg.disableThrottling);
+      if (cfg.workloadProfile === 'idle') {
+        shaderPower *= 0.2; // Only 20% active
+      }
+      
+      // New: Calculate peakW_post first (before tPost as per user instructions)
+      // New, more realistic power calculation based on efficiency penalties
+      // Inefficient algorithms and poor memory alignment increase power draw due to wasted work and data movement.
+      const powerPenaltyFactor = (1 + (1 - algEff) * 0.5 + (1 - archAlignmentFactor) * 1.5);
 
-      let r1_theoGF_postDVFS = (
-        cfg.numPerf * PERF_GFLOPS_PER_GHZ * dvfsApplied.perfGHz +
-        cfg.numEff  * EFF_GFLOPS_PER_GHZ * dvfsApplied.effGHz +
-        cfg.numHyper* HYPER_GFLOPS_PER_GHZ * dvfsApplied.hyperGHz
-      ) * perfF;
-      let r1_theoTOPS_postDVFS = (cfg.numAI * AI_TOPS_PER_GHZ * dvfsApplied.npuGHz) * perfF;
-      let r1_theoGPU_postDVFS = cfg.numGPU * GPU_TFLOPS_PER_CORE_BASE * cfg.clkGPU * perfF;
+      let dynamic_power = (
+        cfg.numPerf * POW_PERF_W * (cfg.clkPerf / 3.0) + // Using cfg.clk here, DVFS applied later
+        cfg.numEff  * POW_EFF_W  * (cfg.clkEff / 2.0) +
+        cfg.numHyper* POW_HYPER_W* (cfg.clkHyper / 2.5) +
+        cfg.numAI  * POW_AI_W * (cfg.clkNPU / 1.5) +
+        cfg.numGPU * POW_GPU_W_PER_GHZ * cfg.clkGPU
+      );
+      if (cfg.workloadProfile === 'idle') {
+          dynamic_power *= 0.3; // Only 30% of dynamic power active
+      }
 
-      r1_theoTOPS_postDVFS *= qm.tops;
-      r1_theoGF_postDVFS *= qm.gflops;
+      // Apply the penalty factor to the dynamic power component
+      dynamic_power *= powerPenaltyFactor;
 
-      const thr = throttleFactor(tPre, cfg.disableThrottling);
+      // The final power is the sum of penalized dynamic power and base power, adjusted for other factors.
+      // Note: `thr` is not yet applied here because `tPost` needs to be calculated first.
+      let peakW_post = (dynamic_power * powF + BASE_PEAK_W + shaderPower) * powerMultiplier + basePowerAdjustment;
 
-      // --- New: Incorporate algorithm runtime (r0_ms) into performance ---
+      // 1. Calculate tPost first
+      let tPost = estimateThermals(peakW_post, cfg.coolingW, cfg.nodeNm, shaderPower);
+
+      // 2. Then compute thr using either default or user-defined thermal limit
+      let thr = 1.0; // Initialize throttle factor
+      const thermalLimit = cfg.thermalLimit; // Get value from input
+
+      if (!isNaN(thermalLimit) && thermalLimit >= 60 && thermalLimit <= 120) {
+        thr = throttleFactor(tPost, false, thermalLimit); // use custom limit
+      } else {
+        thr = throttleFactor(tPost, cfg.disableThrottling); // use default logic
+      }
+      
+      // Recalculate peakW_post *with* the throttle factor now that thr is known
+      peakW_post = (dynamic_power * powF + BASE_PEAK_W + shaderPower) * powerMultiplier * thr + basePowerAdjustment;
+
+
+      const SHADER_GFLOPS_BASE = 0.5; // GFLOPS per shader unit at base complexity
+      let shaderMultiplier = 1.0;
+      switch(cfg.shaderComplexity){
+        case 'low': shaderMultiplier = 0.7; break;
+        case 'medium': shaderMultiplier = 1.0; break;
+        case 'high': shaderMultiplier = 1.4; break;
+      }
+      const shaderGFLOPS = cfg.numShaders * SHADER_GFLOPS_BASE * shaderMultiplier * perfF;
+
+      // Incorporate algorithm runtime (r0_ms) into performance
       const BASELINE_ALGORITHM_MS = 100; // A heuristic baseline for "good" algorithm runtime
       const runtimePerformanceFactor = clamp(BASELINE_ALGORITHM_MS / r0_ms, 0.1, 2.0); // Reward faster, penalize slower
       let runtimeImpactMessage = '';
@@ -1648,44 +2037,31 @@ textarea.w-full {
           runtimeImpactMessage = `Algorithm runtime has a neutral impact on overall performance.`;
       }
 
-      let effGF = r1_theoGF_postDVFS * algEff * thr * perfMultiplier * archAlignmentFactor * runtimePerformanceFactor;
-      let effTOPS = r1_theoTOPS_postDVFS * algEff * thr * perfMultiplier * archAlignmentFactor * runtimePerformanceFactor;
-      let effGPU = r1_theoGPU_postDVFS * algEff * thr * perfMultiplier * archAlignmentFactor * runtimePerformanceFactor;
-      // --- End New: Incorporate algorithm runtime ---
+      // Apply DVFS (Dynamic Voltage and Frequency Scaling) - moved after thr is known
+      const dvfsCapEl = $('dvfsCap');
+      const dvfsCap = dvfsCapEl ? parseFloat(dvfsCapEl.value) : 4200;
+      // Pass the *actual* tPost (after power recalculated with thr) to DVFS
+      const dvfsApplied = applyDVFS(cfg, dvfsCap, tPost, cfg.disableThrottling);
+
+      // R2 Metrics (Effective Real-World Performance)
+      let effGF = (r1_theoGF * (dvfsApplied.perfGHz / cfg.clkPerf) + shaderGFLOPS) * algEff * thr * perfMultiplier * archAlignmentFactor * runtimePerformanceFactor;
+      let effTOPS = (r1_theoTOPS * (dvfsApplied.npuGHz / cfg.clkNPU)) * algEff * thr * perfMultiplier * archAlignmentFactor * runtimePerformanceFactor;
+      let effGPU = r1_theoGPU * algEff * thr * perfMultiplier * archAlignmentFactor * runtimePerformanceFactor;
 
 
-      // --- New, more realistic power calculation based on efficiency penalties ---
-      // Inefficient algorithms and poor memory alignment increase power draw due to wasted work and data movement.
-      // We model this as a penalty factor on the dynamic (core-related) power consumption.
-      const powerPenaltyFactor = (1 + (1 - algEff) * 0.5 + (1 - archAlignmentFactor) * 1.5);
+      const peakMB = (r0_peakBytes || 0) / (1024*1024); // Convert bytes to MB
+      const memOK = peakMB <= cfg.sysMem; // Check if peak memory usage is within system memory
 
-      let dynamic_power = (
-        cfg.numPerf * POW_PERF_W * (dvfsApplied.perfGHz / cfg.clkPerf) +
-        cfg.numEff  * POW_EFF_W  * (dvfsApplied.effGHz / cfg.clkEff) +
-        cfg.numHyper* POW_HYPER_W* (dvfsApplied.hyperGHz / cfg.clkHyper) +
-        cfg.numAI  * POW_AI_W * (dvfsApplied.npuGHz / cfg.clkNPU) +
-        cfg.numGPU * POW_GPU_W_PER_GHZ * cfg.clkGPU
+      // Composite Benchmark Score
+      const bench = Math.round(
+        (Math.pow(effGF, 0.92) * 520) + // GFLOPS contribution
+        (Math.pow(effTOPS, 0.88) * 980) + // TOPS contribution
+        (Math.pow(effGPU, 0.85) * 700) // GPU TFLOPS contribution
       );
 
-      // Apply the penalty factor to the dynamic power component
-      dynamic_power *= powerPenaltyFactor;
-
-      // The final power is the sum of penalized dynamic power and base power, adjusted for other factors.
-      let peakW_post = (dynamic_power * powF + BASE_PEAK_W) * powerMultiplier * thr + basePowerAdjustment;
-      // --- End of new power calculation ---
-
-      let tPost = estimateThermals(peakW_post, cfg.coolingW, cfg.nodeNm);
-
-      const peakMB = (r0_peakBytes || 0) / (1024*1024);
-      const memOK = peakMB <= cfg.sysMem;
-
-      const bench = Math.round(
-        (Math.pow(effGF, 0.92) * 520) +
-        (Math.pow(effTOPS, 0.88) * 980) +
-        (Math.pow(effGPU, 0.85) * 700)
-     );
-
+      // Battery life calculations
       const battWh = mAhToWh(cfg.battmAh);
+      // Average power consumption based on workload utilization and base power
       const utilLight = 0.10, utilMixed = 0.28, utilHeavy = 0.65;
       const baseLightW = 1.1, baseMixedW = 1.6, baseHeavyW = 2.2;
 
@@ -1698,14 +2074,15 @@ textarea.w-full {
       const pHeavy = avgPower(utilHeavy, baseHeavyW, peakW_post);
 
       function hours(Wh, W){
-        const raw = Wh / Math.max(0.9, W);
-        return clamp(raw, 1.8, 48);
+        const raw = Wh / Math.max(0.9, W); // Prevent division by zero/very small numbers
+        return clamp(raw, 1.8, 48); // Clamp hours to a realistic range
       }
 
       const hLight = hours(battWh, pLight);
       const hMixed = hours(battWh, pMixed);
       const hHeavy = hours(battWh, pHeavy);
 
+      // Determine chip specialization based on core counts
       let specialization = [];
       const coreCounts = {perf: cfg.numPerf, eff: cfg.numEff, ai: cfg.numAI, hyper: cfg.numHyper, gpu: cfg.numGPU};
       const maxCoreCount = Math.max(...Object.values(coreCounts));
@@ -1715,12 +2092,13 @@ textarea.w-full {
       if(cfg.numEff === maxCoreCount && cfg.numEff > 0) specialization.push('Efficiency-optimized chip (battery friendly)');
       if(cfg.numGPU === maxCoreCount && cfg.numGPU > 0) specialization.push('GPU-heavy chip (graphics & parallel compute)');
       if(cfg.numHyper > 0) specialization.push('Includes Hyper cores (specialized compute accelerators)');
-      if(specialization.length === 0) specialization.push('Balanced design');
+      if(specialization.length === 0) specialization.push('Balanced design'); // Fallback if no specific specialization
 
+      // Thermal warning messages
       let thermalWarning = '';
       if(tPost >= 120) {
         thermalWarning = '<span class="warning">DANGER:</span> Device will overheat severely and likely be damaged!';
-        document.body.classList.add('thermal-critical');
+        document.body.classList.add('thermal-critical'); // Add critical thermal animation
       }
       else if(tPost >= 100)
         thermalWarning = '<span class="warning">CRITICAL:</span> Device will likely shut down under heavy load due to extreme heat.';
@@ -1738,12 +2116,14 @@ textarea.w-full {
         thermalWarning = '<span class="success">Very Cool:</span> Device operating at optimal low temperatures.';
       }
 
+      // Performance advice based on FLOPs/TOPS
       let flopAdvice = '';
       if(effTOPS > 3000)
         flopAdvice = '<span class="success">Excels in AI and ML workloads.</span>';
       else if(effGF > 10000)
         flopAdvice = '<span class="success">Strong general compute and floating point performance.</span>';
 
+      // Risk assessment for unrealistic specs
       let errorRisk = '';
       let riskScore = 0;
       if(cfg.clkPerf > 5) riskScore += 2;
@@ -1754,19 +2134,21 @@ textarea.w-full {
       if(cfg.numPerf + cfg.numEff + cfg.numAI + cfg.numHyper + cfg.numGPU > 256) riskScore += 3;
       if(cfg.battmAh > 10000) riskScore += 1;
       if(cfg.coolingW < 2) riskScore += 2;
-      if (cfg.disableThrottling && tPost > 100) riskScore += 3;
+      if (cfg.disableThrottling && tPost > 100) riskScore += 3; // High risk if throttling disabled and critical temp
 
       if(riskScore >= 4)
         errorRisk = '<span class="warning">High risk of unrealistic or unstable simulation results due to extreme specs.</span>';
       else if(riskScore >= 2)
         errorRisk = '<span class="warning">Moderate risk of unrealistic behavior; check input parameters carefully.</span>';
 
+      // Overall verdict for the chip design
       let verdict = 'Balanced device for everyday use.';
       if(bench > 2200000) verdict = 'Absolute flagship — pro-grade performance & AI.';
       else if(bench > 1400000) verdict = 'High-end performer — strong for gaming & creators.';
       else if(bench > 800000) verdict = 'Upper mid-range device.';
       else if(bench < 350000) verdict = 'Entry-level / budget profile.';
 
+      // Update thermal and throttle bars visually
       const tempPercent = clamp((tPost - 30) / 90, 0, 1) * 100;
       const throttlePercent = (1 - thr) * 100;
       const tempBarEl = $('tempBar');
@@ -1774,6 +2156,7 @@ textarea.w-full {
       if (tempBarEl) tempBarEl.style.width = tempPercent + '%';
       if (throttleBarEl) throttleBarEl.style.width = throttlePercent + '%';
 
+      // Update Live KPIs in the UI
       setText('k_time', fmt(r0_ms, 2) + ' ms');
       setText('k_gflops', fmt(effGF, 2));
       setText('k_tops', fmt(effTOPS, 2));
@@ -1784,7 +2167,7 @@ textarea.w-full {
       setText('k_bench', bench.toLocaleString());
       setText('k_batt', hMixed.toFixed(1) + ' h');
 
-      const memStatus = peakMB <= (cfg.sysMem * 0.9) ? '<span class="success">Memory OK</span>' : '<span class="warning">Memory exceeded/tight!</span>';
+      // Update Summary / Advice section
       const kSummaryEl = $('k_summary');
       if (kSummaryEl) {
         kSummaryEl.innerHTML = `
@@ -1792,6 +2175,9 @@ textarea.w-full {
           <div class="small">
             <strong>Core Mix:</strong> ${cfg.numPerf}P / ${cfg.numEff}E / ${cfg.numAI}AI / ${cfg.numHyper}H / ${cfg.numGPU}GPU<br/>
             <strong>Clocks:</strong> Perf:${cfg.clkPerf}GHz, Eff:${cfg.clkEff}GHz, Hyper:${cfg.clkHyper}GHz, NPU:${cfg.clkNPU}GHz, GPU:${cfg.clkGPU}GHz<br/>
+            <strong>Shader Units:</strong> ${cfg.numShaders} &nbsp;|&nbsp;
+            <strong>Complexity:</strong> ${cfg.shaderComplexity} &nbsp;|&nbsp;
+            <strong>Shader GFLOPS:</strong> ${fmt(shaderGFLOPS, 2)}<br/>
             <strong>Process Node:</strong> ${cfg.nodeNm} nm &nbsp;|&nbsp; <strong>Battery:</strong> ${cfg.battmAh} mAh<br/>
             <strong>Cooling Budget:</strong> ${cfg.coolingW} W &nbsp;|&nbsp; <strong>System Memory:</strong> ${cfg.sysMem} MB<br/>
             <strong>Throttling:</strong> ${cfg.disableThrottling ? '<span class="warning">DISABLED</span>' : '<span class="success">ENABLED</span>'}<br/>
@@ -1801,13 +2187,13 @@ textarea.w-full {
             Battery Life (Mixed Use): <strong>${hMixed.toFixed(1)} h</strong> &nbsp;|&nbsp;
             Temperature: <strong>${tPost.toFixed(0)}°C</strong> &nbsp;|&nbsp;
             Throttle Level: <strong>${throttlePercent.toFixed(0)}%</strong> &nbsp;|&nbsp;
-            Composite Score: <strong>${bench.toLocaleString()}</strong>
+            Composite Score: <strong>${bench.toLocaleString()}</strong><br/>
             GPU TFLOPS: <strong>${fmt(effGPU, 2)}</strong>
           </div>
           <div class="small mt-2">
             <strong>R0 (Algorithmic Base):</strong> Runtime ${r0_ms.toFixed(1)} ms, ${r0_flops.toFixed(1)} FLOPs, ${peakMB.toFixed(1)} MB Peak Mem<br/>
             <strong>R1 (Hardware Potential):</strong> Theoretical ${r1_theoGF.toFixed(1)} GFLOPs, ${r1_theoTOPS.toFixed(1)} TOPS, ${r1_theoGPU.toFixed(1)} TFLOPs (pre-throttling)<br/>
-            <strong>R2 (Effective Performance):</b> Achieved ${effGF.toFixed(1)} GFLOPs, ${effTOPS.toFixed(1)} TOPS, ${effGPU.toFixed(1)} TFLOPs (real-world)
+            <strong>R2 (Effective Performance):</strong> Achieved ${effGF.toFixed(1)} GFLOPs, ${effTOPS.toFixed(1)} TOPS, ${effGPU.toFixed(1)} TFLOPs (real-world)
           </div>
           <div class="small mt-2">
             <strong>Specialization:</strong><br/>
@@ -1827,6 +2213,7 @@ textarea.w-full {
         `;
       }
 
+      // Update Chip Price Estimate
       const totalPrice = calculatePrice(cfg);
       const pEstimateEl = $('p_estimate');
       if (pEstimateEl) {
@@ -1837,33 +2224,40 @@ textarea.w-full {
         `;
       }
 
-      const safep = v => (isNaN(v) || !isFinite(v) || v <= 0) ? 0 : v;
+      // Calculate Performance Per Watt (PPW) for chart
+      const safep = v => (isNaN(v) || !isFinite(v) || v <= 0) ? 0 : v; // Safe division helper
       const ppwLight = safep(bench / pLight);
       const ppwMixed = safep(bench / pMixed);
       const ppwHeavy = safep(bench / pHeavy);
-      lastChartData = [ppwLight, ppwMixed, ppwHeavy];
+      lastChartData = [ppwLight, ppwMixed, ppwHeavy]; // Store for chart updates
       
+      // Update Chart.js data and scale
       if (ppwChart) {
           ppwChart.data.datasets[0].data = lastChartData;
           ppwChart.options.scales.y.type = chartIsLog ? 'logarithmic' : 'linear';
           ppwChart.update();
       }
       
+      // Update chart descriptions
       const chartDescriptionsEl = $('chartDescriptions');
       if (chartDescriptionsEl) {
           chartDescriptionsEl.innerHTML = evaluateChartData(lastChartData).map(desc => `<p>${desc}</p>`).join('');
       }
 
     } catch(e) {
+      // Catch and display any simulation errors
       await showCustomAlert('Simulation error: ' + e.message, 'Simulation Error');
       console.error(e);
     } finally {
+      // Always hide loading overlay when simulation finishes or errors
       const loadingOverlay = $('loadingOverlay');
       if (loadingOverlay) loadingOverlay.style.display = 'none';
     }
   }
 
+  // --- Event Listeners and Initialization ---
   window.addEventListener('load', () => {
+    // DVFS slider and value update
     const dvfsCapEl = $('dvfsCap');
     const dvfsValEl = $('dvfsVal');
     if (dvfsCapEl && dvfsValEl) {
@@ -1873,6 +2267,7 @@ textarea.w-full {
       });
     }
 
+    // Process node performance meter update
     const nodeNmEl = $('nodeNm');
     if (nodeNmEl) {
       nodeNmEl.addEventListener('input', () => {
@@ -1880,19 +2275,20 @@ textarea.w-full {
       });
     }
 
-    // Set initial algorithm JSON
+    // Set initial algorithm JSON and render saved list
     setAlgorithmJson(DEFAULT_ALGORITHM_JSON);
     renderSavedList();
-    applyConfigToUI(DEFAULT);
-    initChart();
+    applyConfigToUI(DEFAULT); // Apply default config on load
+    initChart(); // Initialize chart
 
+    // Button event listeners
     const btnRunEl = $('btnRun');
-    if (btnRunEl) btnRunEl.onclick = runSimulation;
+    if (btnRunEl) btnRunEl.onclick = () => runSimulation().catch(e => console.error(e)); // Run simulation on click
 
     const btnRefreshChartEl = $('btnRefreshChart');
     if (btnRefreshChartEl) btnRefreshChartEl.onclick = () => {
       if (ppwChart) {
-        ppwChart.update();
+        ppwChart.update(); // Force chart update
       }
       const chartDescriptionsEl = $('chartDescriptions');
       if (chartDescriptionsEl) {
@@ -1902,8 +2298,8 @@ textarea.w-full {
 
     const btnToggleChartModeEl = $('btnToggleChartMode');
     if (btnToggleChartModeEl) btnToggleChartModeEl.onclick = () => {
-      chartIsLog = !chartIsLog;
-      initChart();
+      chartIsLog = !chartIsLog; // Toggle chart scale
+      initChart(); // Re-initialize chart with new scale
       if(ppwChart){
         ppwChart.data.datasets[0].data = lastChartData;
         ppwChart.update();
@@ -1927,8 +2323,8 @@ textarea.w-full {
           if(ok){ showCustomAlert('Saved as '+name, 'Success'); const chipTagEl = $('chipTag'); if (chipTagEl) chipTagEl.innerText = name; renderSavedList(); }
           else showCustomAlert('Save failed (storage?).', 'Error');
         },
-        () => {},
-        true
+        () => {}, // Cancel callback
+        true // Show input field
       );
     };
     const btnListSaveEl = $('btnListSave');
@@ -1944,7 +2340,7 @@ textarea.w-full {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; a.download = 'chip_export.json'; a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      setTimeout(() => URL.revokeObjectURL(url), 2000); // Clean up URL object
     };
     const btnCompareEl = $('btnCompare');
     if (btnCompareEl) btnCompareEl.onclick = async () => {
@@ -1967,11 +2363,11 @@ textarea.w-full {
         (sel) => {
           if(!sel) return;
           if(sel==='mid') {
-            applyConfigToUI({numPerf:2,numEff:6,numAI:1,numHyper:0,numGPU:4,clkPerf:2.7,clkEff:1.8,clkHyper:2.2,clkNPU:1.2,clkGPU:1.0,nodeNm:6,battmAh:5000,sysMem:6144,matN:192,layers:5,coolingW:5.5,dvfsCapMHz:3600,quantMode:'fp16',weightFormat:'fp16',disableThrottling:false,workloadProfile:'mixed', algorithmJson: DEFAULT_ALGORITHM_JSON});
+            applyConfigToUI({numPerf:2,numEff:6,numAI:1,numHyper:0,numGPU:4,clkPerf:2.7,clkEff:1.8,clkHyper:4,clkNPU:1.2,clkGPU:1.0,nodeNm:6,battmAh:5000,sysMem:6144,matN:192,layers:5,coolingW:5.5,dvfsCapMHz:3600,quantMode:'fp16',weightFormat:'fp16',disableThrottling:false,workloadProfile:'mixed', thermalLimit: 85, algorithmJson: DEFAULT_ALGORITHM_JSON});
           } else if(sel==='flag') {
-            applyConfigToUI({numPerf:4,numEff:4,numAI:2,numHyper:1,numGPU:12,clkPerf:3.1,clkEff:2.0,clkHyper:2.5,clkNPU:1.5,clkGPU:1.8,nodeNm:4,battmAh:5000,sysMem:8192,matN:256,layers:6,coolingW:7.5,dvfsCapMHz:4200,quantMode:'fp16',weightFormat:'fp16',disableThrottling:false,workloadProfile:'mixed', algorithmJson: BLOCKED_ALGORITHM_JSON});
+            applyConfigToUI({numPerf:4,numEff:4,numAI:2,numHyper:1,numGPU:12,clkPerf:3.1,clkEff:2.0,clkHyper:2.5,clkNPU:1.5,clkGPU:1.8,nodeNm:4,battmAh:5000,sysMem:8192,matN:256,layers:6,coolingW:7.5,dvfsCapMHz:4200,quantMode:'fp16',weightFormat:'fp16',disableThrottling:false,workloadProfile:'mixed', thermalLimit: 85, algorithmJson: BLOCKED_ALGORITHM_JSON});
           } else if(sel==='ultra') {
-            applyConfigToUI({numPerf:6,numEff:2,numAI:3,numHyper:1,numGPU:16,clkPerf:3.4,clkEff:2.2,clkHyper:2.8,clkNPU:1.7,clkGPU:2.2,nodeNm:3,battmAh:6000,sysMem:12288,matN:320,layers:7,coolingW:9.0,dvfsCapMHz:4400,quantMode:'int8',weightFormat:'fp16',disableThrottling:false,workloadProfile:'mixed', algorithmJson: BATTERY_OPTIMIZED_ALGORITHM_JSON});
+            applyConfigToUI({numPerf:6,numEff:2,numAI:3,numHyper:1,numGPU:16,clkPerf:3.4,clkEff:2.2,clkHyper:2.8,clkNPU:1.7,clkGPU:2.2,nodeNm:3,battmAh:6000,sysMem:12288,matN:320,layers:7,coolingW:9.0,dvfsCapMHz:4400,quantMode:'int8',weightFormat:'fp16',disableThrottling:false,workloadProfile:'mixed', thermalLimit: 90, algorithmJson: BATTERY_OPTIMIZED_ALGORITHM_JSON});
           } else {
             showCustomAlert('Unknown preset. Type mid, flag, or ultra.', 'Invalid Preset');
           }
@@ -2021,7 +2417,9 @@ This mode would suggest adjustments to your chip (e.g., lower core counts, older
     // New Tutorial Modal Logic
     const btnAlgorithmTutorialEl = $('btnAlgorithmTutorial');
     if (btnAlgorithmTutorialEl) btnAlgorithmTutorialEl.onclick = () => {
-      window.open('algorithm_design_tutorial', '_blank'); // Open the new tutorial in a new tab
+      // This will open a new tab with a fictional tutorial page;
+      // in a real scenario, you'd provide the actual URL to the tutorial.
+      window.open('algorithm_design_tutorial', '_blank');
     };
     
     // Existing Tuning Guide Modal Logic
@@ -2036,6 +2434,7 @@ This mode would suggest adjustments to your chip (e.g., lower core counts, older
       if (tuningGuideModalEl) tuningGuideModalEl.classList.add('hidden');
     };
 
+    // Initial simulation run after a short delay to allow UI to render
     setTimeout(() => {
       runSimulation().catch(e => console.error(e));
     }, 120);
