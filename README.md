@@ -11,7 +11,7 @@ Welcome to **Prime Edition**, an advanced, interactive simulator for designing a
 **Prime Edition** is a web-based simulator that lets you:
 
 - Architect your own fictional phone chip.
-- Edit the core math algorithm that drives neural network simulations. **(doesnt work yet (many bug))**
+- Edit the core math algorithm that drives neural network simulations. **(now work, future change potential)**
 - Explore how hardware and software interact—thermal throttling, DVFS, and more.
 - Visualize performance, battery life, and thermal behavior.
 - Save, load, compare, and export chip designs.
@@ -37,7 +37,7 @@ It’s part sandbox, part benchmark engine, part metaphysical playground.
 - Simulate workloads: gaming, video editing, idle, mixed-use.
 - Enable/disable thermal throttling and DVFS.
 
-### 2. 🧮 Editable Math Architecture (work-in-progress)
+### 2. 🧮 Editable JSON Architecture **(now work, future change potential)**
 - Sandbox environment for custom matrix multiplication code.
 - Add residuals, optimize for speed or battery.
 - Simulator tracks runtime, FLOPs, memory usage, and efficiency.
@@ -47,12 +47,12 @@ It’s part sandbox, part benchmark engine, part metaphysical playground.
   - Raw algorithm runtime (R0)
   - Theoretical hardware potential (R1)
   - Real-world effective performance (R2)
-- Models temperature rise, throttling, and battery drain.
+- Models temperature rise, throttling, and battery drain. **(Fixing-In-Progress)**
 
 ### 4. 📊 Visual Dashboard
 - Live KPIs: runtime, GFLOPS/TOPS, power, temp, battery life.
-- Charts for efficiency per watt across workloads.
-- Thermal bars and performance meters.
+- Charts for efficiency per watt across workloads. **(Fixing-In-Progress)**
+- Thermal bars and performance meters. **(Fixing-In-Progress)**
 
 ### 5. 💾 Persistence & Sharing
 - Save/load chip designs locally.
@@ -61,8 +61,8 @@ It’s part sandbox, part benchmark engine, part metaphysical playground.
 
 ### 6. 🧑‍💻 User-Friendly Interface
 - Clean UI with sliders, validation, and helpful modals.
-- Alerts for unrealistic specs.
-- Code beautifier for math architecture editor.
+- Alerts for unrealistic specs. **(Fixing-In-Progress)**
+- Code beautifier for math architecture editor. **(Work-In-Progress)**
 
 ---
 
@@ -70,11 +70,11 @@ It’s part sandbox, part benchmark engine, part metaphysical playground.
 
 At its core, the simulator runs matrix multiplications to mimic neural network layers. It:
 
-- Times your custom algorithm. **(work-in-progress)**
+- Times your custom algorithm. **(now work, future change potential)**
 - Counts floating-point and integer ops.
 - Combines algorithm speed with chip specs.
-- Simulates thermal effects, DVFS, and battery drain.
-- Outputs performance metrics based on real-world constraints.
+- Simulates thermal effects, DVFS, and battery drain. **(Fixing-In-Progress)**
+- Outputs performance metrics based on real-world constraints. **(Fixing-In-Progress)**
 
 ---
 
